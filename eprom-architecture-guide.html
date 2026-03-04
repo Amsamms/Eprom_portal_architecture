@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>EPROM Portal — Architecture Guide</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card2: #334155;
+    --accent: #38bdf8;
+    --accent2: #818cf8;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --orange: #fb923c;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #475569;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 16px;
+    padding-bottom: 80px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    text-align: center;
+    padding: 20px 0 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+  }
+
+  h2 {
+    font-size: 1.15rem;
+    color: var(--accent);
+    margin: 24px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  h2 .icon { font-size: 1.3rem; }
+
+  h3 {
+    font-size: 0.95rem;
+    color: var(--accent2);
+    margin: 16px 0 8px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .badge-green { background: rgba(74,222,128,0.15); color: var(--green); }
+  .badge-yellow { background: rgba(251,191,36,0.15); color: var(--yellow); }
+  .badge-blue { background: rgba(56,189,248,0.15); color: var(--accent); }
+  .badge-purple { background: rgba(129,140,248,0.15); color: var(--accent2); }
+  .badge-orange { background: rgba(251,146,60,0.15); color: var(--orange); }
+
+  .diagram {
+    background: #0c1222;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+
+  .diagram .hl { color: var(--accent); }
+  .diagram .hl2 { color: var(--accent2); }
+  .diagram .hlg { color: var(--green); }
+  .diagram .hly { color: var(--yellow); }
+  .diagram .hlo { color: var(--orange); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin: 8px 0;
+  }
+
+  th {
+    text-align: left;
+    padding: 8px 10px;
+    background: var(--card2);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  td {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(71,85,105,0.4);
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  .flow-step {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(71,85,105,0.3);
+  }
+
+  .flow-step:last-child { border-bottom: none; }
+
+  .step-num {
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  .step-text {
+    font-size: 0.85rem;
+  }
+
+  .step-text strong { color: var(--text); }
+  .step-text span { color: var(--muted); }
+
+  .folder-tree {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.73rem;
+    line-height: 1.7;
+    color: var(--muted);
+    padding: 12px;
+    background: #0c1222;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .folder-tree .dir { color: var(--accent); font-weight: 600; }
+  .folder-tree .file { color: var(--text); }
+  .folder-tree .comment { color: var(--muted); font-style: italic; }
+  .folder-tree .py { color: var(--green); }
+  .folder-tree .important { color: var(--yellow); }
+
+  .python-box {
+    background: #0c1222;
+    border-left: 3px solid var(--green);
+    border-radius: 0 10px 10px 0;
+    padding: 14px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.72rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 10px 0;
+  }
+
+  .python-box .kw { color: var(--accent2); }
+  .python-box .fn { color: var(--accent); }
+  .python-box .str { color: var(--green); }
+  .python-box .cmt { color: var(--muted); font-style: italic; }
+  .python-box .var { color: var(--text); }
+
+  .qa-grid { display: flex; flex-direction: column; gap: 8px; }
+
+  .qa-item {
+    background: var(--card2);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+
+  .qa-q {
+    font-size: 0.8rem;
+    color: var(--yellow);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .qa-a {
+    font-size: 0.82rem;
+    color: var(--text);
+  }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 6px 0;
+  }
+
+  .tag {
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+
+  .collapsible { cursor: pointer; user-select: none; }
+
+  .collapsible::after {
+    content: ' ▾';
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .collapsible.collapsed::after { content: ' ▸'; }
+
+  .collapsible-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .collapsible-content.hidden {
+    max-height: 0 !important;
+    padding: 0;
+    margin: 0;
+  }
+
+  .nav-dots {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15,23,42,0.95);
+    backdrop-filter: blur(10px);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+    z-index: 100;
+  }
+
+  .nav-dot {
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 0.65rem;
+    color: var(--muted);
+    background: var(--card);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .nav-dot:active { background: var(--accent); color: var(--bg); }
+
+  .highlight-box {
+    background: rgba(56,189,248,0.08);
+    border: 1px solid rgba(56,189,248,0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 10px 0;
+    font-size: 0.85rem;
+  }
+
+  .warning-box {
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 10px 0;
+    font-size: 0.85rem;
+    color: var(--red);
+  }
+</style>
+</head>
+<body>
+
+<h1>EPROM Portal</h1>
+<p class="subtitle">Architecture Guide — Meeting Reference<br>Last updated: March 4, 2026</p>
+
+<!-- NAV -->
+<nav class="nav-dots">
+  <a class="nav-dot" href="#overview">Overview</a>
+  <a class="nav-dot" href="#workers">Workers</a>
+  <a class="nav-dot" href="#folders">Folders</a>
+  <a class="nav-dot" href="#flow">Request Flow</a>
+  <a class="nav-dot" href="#auth">Auth</a>
+  <a class="nav-dot" href="#deploy">Deploy</a>
+  <a class="nav-dot" href="#qa">Q&A</a>
+</nav>
+
+<!-- ========== SECTION: OVERVIEW ========== -->
+<section id="overview">
+<h2><span class="icon">&#9881;</span> The Big Picture</h2>
+
+<p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">
+  Think of the VM as a <strong style="color:var(--text)">factory building</strong>.
+  Inside it, 5 independent workers (containers) each do one job.
+</p>
+
+<div class="diagram"><span class="hl">THE INTERNET</span> (your browser)
+       |
+       v
++----------------------------------------------+
+| <span class="hly">FACTORY BUILDING</span> (AWS VM - 18.198.1.231)     |
+|                                              |
+|  +----------+                                |
+|  | <span class="hlo">NGINX</span>    | &lt;-- The receptionist           |
+|  | (guard)  |     Decides who goes where     |
+|  +----+-----+                                |
+|       |                                      |
+|       +--&gt; <span class="hl">Portal</span>   (main office)          |
+|       +--&gt; <span class="hl2">Heater</span>   (heater calc room)     |
+|       +--&gt; <span class="hlg">Pump</span>     (pump calc room)       |
+|       +--&gt; <span class="hlo">MassMole</span> (chemistry lab)        |
+|       |                                      |
+|       |    +----------+                      |
+|       +--&gt; | <span class="hly">Database</span> | (the filing cabinet) |
+|            +----------+                      |
++----------------------------------------------+</div>
+</div>
+</section>
+
+<!-- ========== SECTION: WORKERS ========== -->
+<section id="workers">
+<h2><span class="icon">&#128230;</span> The 5 Workers (Docker Containers)</h2>
+
+<p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">
+  <strong style="color:var(--text)">Docker</strong> = each worker gets their own sealed toolbox.
+  They can't break each other's stuff.
+</p>
+
+<!-- DB -->
+<div class="card">
+  <div class="card-header">
+    <strong>eprom_db</strong>
+    <span class="badge badge-green">Running</span>
+  </div>
+  <div class="tag-row">
+    <span class="tag" style="background:rgba(251,191,36,0.12);color:var(--yellow)">PostgreSQL 16</span>
+  </div>
+  <p style="font-size:0.82rem;color:var(--muted)">
+    Stores <strong style="color:var(--text)">all data</strong>: users, passwords, sessions, permissions, logs.
+    <br>Python analogy: like a powerful SQLite database.
+  </p>
+</div>
+
+<!-- Portal -->
+<div class="card">
+  <div class="card-header">
+    <strong>eprom_portal</strong>
+    <span class="badge badge-blue">Port 3000</span>
+  </div>
+  <div class="tag-row">
+    <span class="tag" style="background:rgba(56,189,248,0.12);color:var(--accent)">Next.js 14</span>
+    <span class="tag" style="background:rgba(129,140,248,0.12);color:var(--accent2)">Node.js</span>
+  </div>
+  <p style="font-size:0.82rem;color:var(--muted)">
+    The <strong style="color:var(--text)">main website</strong> — login, signup, dashboard, admin panel.
+    <br>Python analogy: like a <strong style="color:var(--text)">Django/Flask app</strong> that serves HTML pages + API.
+  </p>
+</div>
+
+<!-- Heater -->
+<div class="card">
+  <div class="card-header">
+    <strong>eprom_heater</strong>
+    <span class="badge badge-purple">Port 3001</span>
+  </div>
+  <div class="tag-row">
+    <span class="tag" style="background:rgba(129,140,248,0.12);color:var(--accent2)">Express.js</span>
+    <span class="tag" style="background:rgba(129,140,248,0.12);color:var(--accent2)">Node.js</span>
+    <span class="tag" style="background:rgba(74,222,128,0.12);color:var(--green)">Claude AI</span>
+  </div>
+  <p style="font-size:0.82rem;color:var(--muted)">
+    Fired heater efficiency calculator — <strong style="color:var(--text)">406 engineering formulas</strong>.
+    <br>Has AI chat assistant (Claude). Python analogy: like a FastAPI app with a calc engine.
+  </p>
+</div>
+
+<!-- Pump -->
+<div class="card">
+  <div class="card-header">
+    <strong>eprom_pump</strong>
+    <span class="badge badge-green">Port 3005</span>
+  </div>
+  <div class="tag-row">
+    <span class="tag" style="background:rgba(74,222,128,0.12);color:var(--green)">Python 3.11</span>
+    <span class="tag" style="background:rgba(74,222,128,0.12);color:var(--green)">FastAPI</span>
+    <span class="tag" style="background:rgba(74,222,128,0.12);color:var(--green)">NumPy/SciPy</span>
+    <span class="tag" style="background:rgba(74,222,128,0.12);color:var(--green)">Claude AI</span>
+  </div>
+  <div class="highlight-box">
+    This one is <strong>Python</strong>! Uses FastAPI, NumPy, SciPy for pump curves, affinity laws, NPSH calculations.
+  </div>
+</div>
+
+<!-- MassMole -->
+<div class="card">
+  <div class="card-header">
+    <strong>eprom_massmole</strong>
+    <span class="badge badge-orange">Port 3006</span>
+  </div>
+  <div class="tag-row">
+    <span class="tag" style="background:rgba(129,140,248,0.12);color:var(--accent2)">Express.js</span>
+    <span class="tag" style="background:rgba(129,140,248,0.12);color:var(--accent2)">Node.js</span>
+    <span class="tag" style="background:rgba(74,222,128,0.12);color:var(--green)">Claude AI</span>
+  </div>
+  <p style="font-size:0.82rem;color:var(--muted)">
+    Mass/mole converter with <strong style="color:var(--text)">160 chemical compounds</strong> database + stream properties.
+    <br>Has AI chat. Python analogy: another FastAPI app.
+  </p>
+</div>
+</section>
+
+<!-- ========== SECTION: FOLDERS ========== -->
+<section id="folders">
+<h2><span class="icon">&#128193;</span> Folder Structure on VM</h2>
+
+<p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">
+  Everything lives at <code style="color:var(--accent)">/opt/eprom/</code> on the AWS VM.
+</p>
+
+<div class="folder-tree"><span class="dir">/opt/eprom/</span>                    <span class="comment">The whole project</span>
+|
++-- <span class="important">docker-compose.yml</span>         <span class="comment">Recipe to run all 5 workers</span>
++-- <span class="important">.env</span>                       <span class="comment">Passwords &amp; secrets</span>
+|
++-- <span class="dir">portal/</span>                    <span class="comment">MAIN WEBSITE</span>
+|   +-- src/
+|       +-- <span class="dir">app/</span>               <span class="comment">Web pages (like Flask routes)</span>
+|       |   +-- <span class="dir">api/auth/</span>      <span class="comment">Login, logout, signup</span>
+|       |   +-- <span class="dir">api/admin/</span>     <span class="comment">Manage users, view logs</span>
+|       |   +-- <span class="dir">dashboard/</span>     <span class="comment">Dashboard page</span>
+|       +-- <span class="dir">lib/</span>               <span class="comment">Helpers (like utils.py)</span>
+|       |   +-- <span class="file">db.js</span>          <span class="comment">DB connection</span>
+|       |   +-- <span class="file">auth.js</span>        <span class="comment">Password hash + JWT</span>
+|       |   +-- <span class="file">email.js</span>       <span class="comment">Sends emails</span>
+|       +-- <span class="file">middleware.js</span>      <span class="comment">Checks "are you logged in?"</span>
+|
++-- <span class="dir">heater/</span>                    <span class="comment">HEATER CALCULATOR</span>
+|   +-- <span class="file">server.js</span>              <span class="comment">Like main.py — starts the app</span>
+|   +-- <span class="dir">engine/</span>
+|   |   +-- <span class="file">heater-engine.js</span>   <span class="comment">The 406 formulas (the math)</span>
+|   +-- <span class="dir">ai/</span>                    <span class="comment">Claude AI chat</span>
+|   +-- <span class="dir">routes/</span>                <span class="comment">API endpoints</span>
+|
++-- <span class="dir">pump/</span>                      <span class="comment">PUMP CALCULATOR (PYTHON!)</span>
+|   +-- src/
+|       +-- <span class="py">main.py</span>            <span class="comment">FastAPI app entry point</span>
+|       +-- <span class="dir">engine/</span>
+|       |   +-- <span class="py">pump_engine.py</span>  <span class="comment">Pump math</span>
+|       |   +-- <span class="py">curve_fitter.py</span> <span class="comment">SciPy curve fitting</span>
+|       |   +-- <span class="py">constants.py</span>    <span class="comment">Physical constants</span>
+|       +-- <span class="dir">ai/</span>                <span class="comment">Claude AI chat</span>
+|       +-- <span class="py">requirements.txt</span>    <span class="comment">pip dependencies</span>
+|
++-- <span class="dir">massmole/</span>                  <span class="comment">MASS/MOLE CONVERTER</span>
+|   +-- <span class="file">server.js</span>
+|   +-- <span class="dir">engine/</span>
+|   |   +-- <span class="file">compounds.js</span>       <span class="comment">160 compounds database</span>
+|
++-- <span class="dir">db/</span>
+|   +-- <span class="important">init.sql</span>               <span class="comment">Creates all tables on first run</span>
+|
++-- <span class="dir">nginx/</span>
+    +-- sites/
+        +-- <span class="important">portal.conf</span>        <span class="comment">URL routing rules</span></div>
+</section>
+
+<!-- ========== SECTION: REQUEST FLOW ========== -->
+<section id="flow">
+<h2><span class="icon">&#8644;</span> How a Request Flows</h2>
+
+<p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;">
+  When someone visits <code style="color:var(--accent)">eprom-portal.xyz/apps/heater/</code>:
+</p>
+
+<div class="card" style="padding:12px 14px;">
+  <div class="flow-step">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <strong>Browser sends request</strong><br>
+      <span>Goes to your VM at 18.198.1.231</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <strong>Nginx checks the URL path</strong><br>
+      <span>/apps/heater/* &rarr; Heater (port 3001)</span><br>
+      <span>/apps/pump/* &rarr; Pump (port 3005)</span><br>
+      <span>/apps/massmole/* &rarr; MassMole (port 3006)</span><br>
+      <span>Everything else &rarr; Portal (port 3000)</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">3</div>
+    <div class="step-text">
+      <strong>App receives request + login cookie</strong><br>
+      <span>The cookie is sent automatically by the browser</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">4</div>
+    <div class="step-text">
+      <strong>App checks: logged in? Has permission?</strong><br>
+      <span>Reads cookie &rarr; checks database session &rarr; checks app permissions</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">5</div>
+    <div class="step-text">
+      <strong>Response sent back</strong><br>
+      <span style="color:var(--green)">Valid &rarr; show the app</span><br>
+      <span style="color:var(--red)">Invalid &rarr; redirect to login</span>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ========== SECTION: AUTH ========== -->
+<section id="auth">
+<h2><span class="icon">&#128274;</span> Authentication (How Login Works)</h2>
+
+<p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">
+  Here it is in Python pseudocode you'll understand:
+</p>
+
+<div class="python-box"><span class="cmt"># 1. User signs up</span>
+<span class="var">password_hash</span> = <span class="fn">bcrypt.hash</span>(<span class="str">"their_password"</span>)
+<span class="cmt"># Stored in DB. Verification email sent.</span>
+
+<span class="cmt"># 2. User logs in</span>
+<span class="kw">if</span> <span class="fn">bcrypt.verify</span>(input_password, stored_hash):
+    <span class="var">token</span> = <span class="fn">jwt.encode</span>(
+        {<span class="str">"user_id"</span>: 5, <span class="str">"role"</span>: <span class="str">"viewer"</span>},
+        <span class="var">SECRET_KEY</span>
+    )
+    <span class="cmt"># Token goes into a COOKIE</span>
+    <span class="cmt"># (like a wristband at a concert)</span>
+    <span class="cmt"># Browser sends it automatically every time</span>
+
+<span class="cmt"># 3. Every page checks the cookie</span>
+<span class="var">token</span> = request.cookies.get(<span class="str">"auth_token"</span>)
+<span class="var">user</span>  = <span class="fn">jwt.decode</span>(token, SECRET_KEY)
+<span class="var">session</span> = <span class="fn">db.query</span>(
+    <span class="str">"SELECT * FROM sessions WHERE token_hash = $1"</span>,
+    <span class="fn">hash</span>(token)
+)
+<span class="kw">if</span> session <span class="kw">and not</span> expired:
+    <span class="cmt"># Access granted!</span></div>
+
+<div class="highlight-box">
+  <strong>Key point:</strong> One login on the Portal works for ALL apps (heater, pump, massmole). They all read the same cookie.
+</div>
+
+<h3>Security Measures</h3>
+<div class="card">
+  <table>
+    <tr><td style="color:var(--green)">&#10003;</td><td>Passwords hashed with bcrypt (cost 12)</td></tr>
+    <tr><td style="color:var(--green)">&#10003;</td><td>JWT tokens — signed, expire automatically</td></tr>
+    <tr><td style="color:var(--green)">&#10003;</td><td>Cookies: httpOnly (JS can't steal them)</td></tr>
+    <tr><td style="color:var(--green)">&#10003;</td><td>Rate limit: 5 login attempts per 15 min</td></tr>
+    <tr><td style="color:var(--green)">&#10003;</td><td>Per-app permissions in database</td></tr>
+    <tr><td style="color:var(--green)">&#10003;</td><td>Admin vs Viewer roles</td></tr>
+  </table>
+</div>
+</section>
+
+<!-- ========== SECTION: DATABASE ========== -->
+<section id="database">
+<h2><span class="icon">&#128451;</span> Database Tables</h2>
+
+<div class="card" style="overflow-x:auto;">
+  <table>
+    <thead>
+      <tr><th>Table</th><th>Stores</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">users</td>
+        <td>Email, hashed password, role (admin/viewer), user number (USR-0001)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">sessions</td>
+        <td>Active logins — who's logged in, from where, when it expires</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">apps</td>
+        <td>Registry of all apps (heater, pump, massmole, etc.)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">user_app_permissions</td>
+        <td>Which user can access which app (many-to-many)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">activity_logs</td>
+        <td>Audit trail — who did what, when</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</section>
+
+<!-- ========== SECTION: DOCKER ========== -->
+<section id="docker">
+<h2><span class="icon">&#128011;</span> Docker Compose (The Recipe)</h2>
+
+<p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">
+  <code style="color:var(--accent)">docker-compose.yml</code> tells Docker how to run everything. In Python terms:
+</p>
+
+<div class="python-box"><span class="cmt"># What docker-compose.yml does (pseudocode):</span>
+
+<span class="cmt"># Start the database first</span>
+<span class="fn">run_container</span>(<span class="str">"eprom_db"</span>,
+    image=<span class="str">"postgres:16"</span>,
+    data_persists=<span class="kw">True</span>)
+
+<span class="cmt"># Then start each app (they all wait for DB)</span>
+<span class="fn">run_container</span>(<span class="str">"eprom_portal"</span>,
+    build_from=<span class="str">"./portal"</span>, port=<span class="var">3000</span>)
+<span class="fn">run_container</span>(<span class="str">"eprom_heater"</span>,
+    build_from=<span class="str">"./heater"</span>, port=<span class="var">3001</span>)
+<span class="fn">run_container</span>(<span class="str">"eprom_pump"</span>,
+    build_from=<span class="str">"./pump"</span>,   port=<span class="var">3005</span>)
+<span class="fn">run_container</span>(<span class="str">"eprom_massmole"</span>,
+    build_from=<span class="str">"./massmole"</span>, port=<span class="var">3006</span>)
+
+<span class="cmt"># All on a private network "eprom_net"</span>
+<span class="cmt"># They talk to each other by name (e.g. "db:5432")</span></div>
+
+<div class="card">
+  <table>
+    <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--green);font-family:monospace;font-size:0.75rem;white-space:nowrap">docker compose up -d --build</td>
+        <td>Start everything (rebuild if code changed)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--red);font-family:monospace;font-size:0.75rem;white-space:nowrap">docker compose down</td>
+        <td>Stop everything</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);font-family:monospace;font-size:0.75rem;white-space:nowrap">docker logs eprom_portal</td>
+        <td>See portal logs (like print statements)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</section>
+
+<!-- ========== SECTION: DEPLOY ========== -->
+<section id="deploy">
+<h2><span class="icon">&#128640;</span> How Deployment Works</h2>
+
+<div class="diagram"><span class="hl">Your Laptop</span>           <span class="hly">GitHub</span>           <span class="hlg">AWS VM</span>
++----------+        +---------+       +----------+
+| Edit     | --git--| Private | --git-| /opt/    |
+| code     | push   | repo    | pull  | eprom/   |
++-----+----+        +---------+       +-----+----+
+      |                                      |
+      +------------- rsync ----------------&gt; |
+         (copy changed files only)           |
+                                       docker compose
+                                       up -d --build
+                                             |
+                                       <span class="hlg">Live at</span>
+                                  <span class="hlg">eprom-portal.xyz</span></div>
+
+<div class="warning-box">
+  <strong>NEVER use rsync --delete</strong> — it once destroyed critical files on the VM that only existed there. Always sync without --delete.
+</div>
+</section>
+
+<!-- ========== SECTION: APPS STATUS ========== -->
+<section id="apps">
+<h2><span class="icon">&#128296;</span> Apps Status</h2>
+
+<div class="card">
+  <table>
+    <thead><tr><th>App</th><th>Status</th><th>Port</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Heater Efficiency</td>
+        <td><span class="badge badge-green">Live</span></td>
+        <td style="font-family:monospace">3001</td>
+      </tr>
+      <tr>
+        <td>Pump Performance</td>
+        <td><span class="badge badge-green">Live</span></td>
+        <td style="font-family:monospace">3005</td>
+      </tr>
+      <tr>
+        <td>Mass Mole Converter</td>
+        <td><span class="badge badge-green">Live</span></td>
+        <td style="font-family:monospace">3006</td>
+      </tr>
+      <tr>
+        <td>Carbon Footprint</td>
+        <td><span class="badge badge-yellow">Planned</span></td>
+        <td style="font-family:monospace;color:var(--muted)">3002</td>
+      </tr>
+      <tr>
+        <td>Soft Sensors</td>
+        <td><span class="badge badge-yellow">Planned</span></td>
+        <td style="font-family:monospace;color:var(--muted)">3003</td>
+      </tr>
+      <tr>
+        <td>Leak Detection</td>
+        <td><span class="badge badge-yellow">Planned</span></td>
+        <td style="font-family:monospace;color:var(--muted)">3004</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</section>
+
+<!-- ========== SECTION: TECH STACK ========== -->
+<section id="stack">
+<h2><span class="icon">&#9881;</span> Tech Stack Summary</h2>
+
+<div class="card">
+  <table>
+    <thead><tr><th>Layer</th><th>Technology</th></tr></thead>
+    <tbody>
+      <tr><td style="color:var(--muted)">Web Server</td><td>Nginx (reverse proxy / receptionist)</td></tr>
+      <tr><td style="color:var(--muted)">Main Portal</td><td>Next.js 14 (Node.js)</td></tr>
+      <tr><td style="color:var(--muted)">Heater App</td><td>Express.js (Node.js)</td></tr>
+      <tr><td style="color:var(--muted)">MassMole App</td><td>Express.js (Node.js)</td></tr>
+      <tr><td style="color:var(--green)">Pump App</td><td style="color:var(--green)">FastAPI (Python 3.11)</td></tr>
+      <tr><td style="color:var(--muted)">Database</td><td>PostgreSQL 16</td></tr>
+      <tr><td style="color:var(--muted)">Auth</td><td>JWT + bcrypt</td></tr>
+      <tr><td style="color:var(--muted)">AI</td><td>Claude 3.5 Sonnet (in each calc app)</td></tr>
+      <tr><td style="color:var(--muted)">Containers</td><td>Docker + Docker Compose</td></tr>
+      <tr><td style="color:var(--muted)">Hosting</td><td>AWS EC2 (Frankfurt)</td></tr>
+      <tr><td style="color:var(--muted)">Domain</td><td>eprom-portal.xyz (Namecheap)</td></tr>
+    </tbody>
+  </table>
+</div>
+</section>
+
+<!-- ========== SECTION: Q&A ========== -->
+<section id="qa">
+<h2><span class="icon">&#128172;</span> Quick Answers for the Meeting</h2>
+
+<div class="qa-grid">
+  <div class="qa-item">
+    <div class="qa-q">"What's the tech stack?"</div>
+    <div class="qa-a">Next.js portal + Express.js calculators + Python FastAPI pump + PostgreSQL, all in Docker on AWS EC2.</div>
+  </div>
+  <div class="qa-item">
+    <div class="qa-q">"How many apps?"</div>
+    <div class="qa-a">3 live (heater, pump, massmole), 3 planned (carbon, sensors, leak detection).</div>
+  </div>
+  <div class="qa-item">
+    <div class="qa-q">"How's security?"</div>
+    <div class="qa-a">JWT tokens in httpOnly cookies, bcrypt passwords, rate limiting, per-user per-app permissions, admin/viewer roles.</div>
+  </div>
+  <div class="qa-item">
+    <div class="qa-q">"Where's it hosted?"</div>
+    <div class="qa-a">AWS EC2 t3.micro in Frankfurt, behind Nginx reverse proxy. Domain: eprom-portal.xyz</div>
+  </div>
+  <div class="qa-item">
+    <div class="qa-q">"Does it use AI?"</div>
+    <div class="qa-a">Yes — each calculator app has a Claude AI chat assistant that can analyze results and give engineering recommendations.</div>
+  </div>
+  <div class="qa-item">
+    <div class="qa-q">"Single sign-on?"</div>
+    <div class="qa-a">Yes — one login on the portal gives access to all permitted apps via shared JWT cookie.</div>
+  </div>
+  <div class="qa-item">
+    <div class="qa-q">"Can it scale?"</div>
+    <div class="qa-a">Each app is a separate Docker container. Can move to bigger VM or split into multiple servers. Currently t3.micro (2 vCPU, 1GB RAM + 2GB swap).</div>
+  </div>
+  <div class="qa-item">
+    <div class="qa-q">"What about the database?"</div>
+    <div class="qa-a">PostgreSQL 16 with persistent storage. Tables for users, sessions, app permissions, activity logs. All queries use parameterized SQL (no injection risk).</div>
+  </div>
+</div>
+</section>
+
+<div style="text-align:center;margin:32px 0 16px;color:var(--muted);font-size:0.75rem;">
+  EPROM Portal Architecture Guide &mdash; Generated March 4, 2026
+</div>
+
+</body>
+</html>
