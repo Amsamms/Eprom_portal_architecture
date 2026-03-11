@@ -330,6 +330,7 @@
   <a class="nav-dot" href="#auth">Auth</a>
   <a class="nav-dot" href="#deploy">Deploy</a>
   <a class="nav-dot" href="#qa">Q&A</a>
+  <a class="nav-dot" href="#actual-arch" style="background:var(--accent);color:var(--bg);font-weight:600;">Deep Dive</a>
 </nav>
 
 <!-- ========== SECTION: OVERVIEW ========== -->
@@ -825,8 +826,1097 @@
 </div>
 </section>
 
+<!-- ========== SECTION: ACTUAL ARCHITECTURE (DEEP DIVE) ========== -->
+<section id="actual-arch">
+<h2><span class="icon">&#128269;</span> Actual Architecture — The Full Deep Dive</h2>
+
+<p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;">
+  Everything below explains <strong style="color:var(--text)">every folder, every file, every function</strong> in plain English.
+  Each sub-section is collapsible &mdash; click a heading to expand/collapse it.
+</p>
+
+<!-- ===== 1. WHAT IS THIS PROJECT? ===== -->
+<div class="card">
+<h3 class="collapsible" data-target="arch-what">1. What Is This Project?</h3>
+<div id="arch-what" class="collapsible-content">
+
+<p style="font-size:0.85rem;color:var(--muted);margin:12px 0;">
+  Imagine a <strong style="color:var(--text)">building with rooms</strong>. The building is a VM (virtual machine) running on AWS.
+  Inside it, there are 6 rooms &mdash; each doing one specific job, sealed off from each other.
+</p>
+
+<div class="highlight-box">
+  <strong>The Building</strong> = AWS EC2 VM (or Company VM)<br>
+  <strong>The Receptionist</strong> = Nginx (decides who goes to which room)<br>
+  <strong>The Filing Cabinet</strong> = PostgreSQL database (stores all data)<br>
+  <strong>Room 1</strong> = Portal (main website &mdash; login, dashboard, admin)<br>
+  <strong>Room 2</strong> = Heater (fired heater efficiency calculator)<br>
+  <strong>Room 3</strong> = Pump (centrifugal pump performance calculator)<br>
+  <strong>Room 4</strong> = MassMole (chemical mole/mass converter)<br>
+  <strong>Room 5</strong> = Optimizer (ML feature importance &amp; parameter optimization)
+</div>
+
+<p style="font-size:0.85rem;color:var(--muted);margin:12px 0;">
+  Each room is a <strong style="color:var(--text)">Docker container</strong> &mdash; a sealed box with its own tools and files.
+  If one room crashes, the others keep running. They communicate over a private network called <code style="color:var(--accent)">eprom_net</code>,
+  and the only way the outside world can reach them is through Nginx (the receptionist).
+</p>
+
+<div class="diagram"><span class="hl">Browser</span> &rarr; <span class="hly">Nginx</span> (port 80/443)
+                 |
+                 +&rarr; <span class="hl">/</span>               &rarr; Portal     (port 3000)
+                 +&rarr; <span class="hl">/apps/heater/</span>   &rarr; Heater     (port 3001)
+                 +&rarr; <span class="hl">/apps/pump/</span>     &rarr; Pump       (port 3005)
+                 +&rarr; <span class="hl">/apps/massmole/</span> &rarr; MassMole   (port 3006)
+                 +&rarr; <span class="hl">/apps/optimizer/</span>&rarr; Optimizer  (port 3007)
+                 |
+                 All apps talk to &rarr; <span class="hly">PostgreSQL</span> (port 5432, internal only)</div>
+</div>
+</div>
+
+<!-- ===== 2. PORTAL ===== -->
+<div class="card">
+<h3 class="collapsible collapsed" data-target="arch-portal">2. Portal &mdash; The Front Door</h3>
+<div id="arch-portal" class="collapsible-content hidden">
+
+<p style="font-size:0.85rem;color:var(--muted);margin:12px 0;">
+  The Portal is built with <strong style="color:var(--text)">Next.js 14</strong> (think of it as Django for JavaScript).
+  It handles login, signup, the dashboard, admin panel, and loads each calculator app in an iframe.
+</p>
+
+<div class="folder-tree"><span class="dir">portal/src/</span>
+|
++-- <span class="dir">app/</span>                              <span class="comment">Pages &amp; API routes (like Flask routes)</span>
+|   +-- <span class="dir">api/</span>                          <span class="comment">Backend endpoints</span>
+|   |   +-- <span class="dir">auth/</span>                     <span class="comment">Authentication</span>
+|   |   |   +-- <span class="file">login/route.js</span>       <span class="comment">POST &mdash; check password, create JWT cookie</span>
+|   |   |   +-- <span class="file">logout/route.js</span>      <span class="comment">POST &mdash; delete session from DB, clear cookie</span>
+|   |   |   +-- <span class="file">me/route.js</span>          <span class="comment">GET &mdash; "who am I?" (returns user + subscription)</span>
+|   |   |   +-- <span class="file">signup/route.js</span>      <span class="comment">POST &mdash; create user, hash password, send verification email</span>
+|   |   |   +-- <span class="file">verify/route.js</span>      <span class="comment">POST &mdash; verify email token</span>
+|   |   |
+|   |   +-- <span class="dir">admin/</span>                    <span class="comment">Admin-only endpoints (requires admin role)</span>
+|   |   |   +-- <span class="file">users/route.js</span>       <span class="comment">GET all users, POST new user, DELETE user</span>
+|   |   |   +-- <span class="file">users/[id]/permissions/</span> <span class="comment">PATCH &mdash; grant/revoke app access</span>
+|   |   |   +-- <span class="file">plans/route.js</span>       <span class="comment">GET/POST subscription plans</span>
+|   |   |   +-- <span class="file">subscriptions/route.js</span><span class="comment">GET/POST user subscriptions</span>
+|   |   |   +-- <span class="file">heater-logs/route.js</span> <span class="comment">GET calculation logs (per app)</span>
+|   |   |   +-- <span class="file">pump-logs/route.js</span>   <span class="comment">GET pump calculation logs</span>
+|   |   |   +-- <span class="file">massmole-logs/</span>       <span class="comment">GET massmole calculation logs</span>
+|   |   |   +-- <span class="file">optimizer-logs/</span>      <span class="comment">GET optimizer calculation logs</span>
+|   |   |
+|   |   +-- <span class="dir">activity/</span>                 <span class="comment">User activity tracking</span>
+|   |   |   +-- <span class="file">route.js</span>             <span class="comment">GET paginated activity logs</span>
+|   |   |   +-- <span class="file">full/route.js</span>        <span class="comment">GET admin-only full logs</span>
+|   |   |   +-- <span class="file">app-open/route.js</span>    <span class="comment">POST &mdash; log when user opens an app</span>
+|   |   |   +-- <span class="file">report-click/route.js</span><span class="comment">POST &mdash; log when user views a report</span>
+|   |   |
+|   |   +-- <span class="dir">dashboard/</span>
+|   |       +-- <span class="file">stats/route.js</span>       <span class="comment">GET dashboard KPI numbers</span>
+|   |
+|   +-- <span class="dir">dashboard/</span>                    <span class="comment">Protected pages (need login)</span>
+|   |   +-- <span class="file">layout.js</span>                <span class="comment">Sidebar + chat wrapper for all dashboard pages</span>
+|   |   +-- <span class="file">page.js</span>                  <span class="comment">Main dashboard &mdash; KPI cards, app cards</span>
+|   |   +-- <span class="file">admin/page.js</span>            <span class="comment">Admin panel &mdash; manage users, plans, subscriptions</span>
+|   |   +-- <span class="file">activity/page.js</span>         <span class="comment">Activity log viewer (who did what, when)</span>
+|   |   +-- <span class="file">reports/page.js</span>          <span class="comment">Reports listing page</span>
+|   |   +-- <span class="file">report-viewer/page.js</span>    <span class="comment">Static report viewer (370 MB of HTML reports)</span>
+|   |   +-- <span class="file">heater-logs/page.js</span>      <span class="comment">Calculation log viewer per app</span>
+|   |   +-- <span class="file">pump-logs/page.js</span>
+|   |   +-- <span class="file">massmole-logs/page.js</span>
+|   |   +-- <span class="file">optimizer-logs/page.js</span>
+|   |
+|   +-- <span class="dir">apps/</span>                         <span class="comment">App loading pages</span>
+|   |   +-- <span class="file">[slug]/page.js</span>           <span class="comment">Dynamic loader &mdash; loads any app in an iframe</span>
+|   |   +-- <span class="file">sensors/page.js</span>          <span class="comment">Soft sensors placeholder (coming soon)</span>
+|   |
+|   +-- <span class="file">login/page.js</span>                <span class="comment">Login form</span>
+|   +-- <span class="file">signup/page.js</span>               <span class="comment">Sign up form</span>
+|   +-- <span class="file">verify/page.js</span>               <span class="comment">Email verification page</span>
+|   +-- <span class="file">page.js</span>                      <span class="comment">Landing page (redirects to /dashboard)</span>
+|   +-- <span class="file">layout.js</span>                    <span class="comment">Root layout (fonts, global styles)</span>
+|
++-- <span class="dir">lib/</span>                              <span class="comment">Shared helper modules (like utils.py)</span>
+|   +-- <span class="important">db.js</span>                    <span class="comment">PostgreSQL connection pool</span>
+|   +-- <span class="important">auth.js</span>                  <span class="comment">JWT signing, verification, session validation</span>
+|   +-- <span class="file">rate-limit.js</span>                <span class="comment">5 login attempts per 15 min per IP</span>
+|   +-- <span class="file">email.js</span>                     <span class="comment">Sends verification emails (Nodemailer)</span>
+|   +-- <span class="file">reports-config.js</span>            <span class="comment">Static report file paths</span>
+|
++-- <span class="dir">hooks/</span>
+|   +-- <span class="file">useUser.js</span>                   <span class="comment">React hook &mdash; fetches /api/auth/me for current user</span>
+|
++-- <span class="dir">components/</span>
+|   +-- <span class="file">Sidebar.js</span>                   <span class="comment">Navigation sidebar (apps list, admin link)</span>
+|   +-- <span class="file">EpromCompanion.js</span>            <span class="comment">Portal-level AI chat</span>
+|
++-- <span class="important">middleware.js</span>                <span class="comment">Checks "are you logged in?" for every request</span></div>
+
+<div class="qa-item" style="margin-top:10px;">
+  <div class="qa-q">What does middleware.js do?</div>
+  <div class="qa-a">It runs <em>before</em> every page load. If you try to visit <code>/dashboard</code> without a valid JWT cookie, it redirects you to <code>/login</code>. Think of it as the bouncer at the door.</div>
+</div>
+
+<div class="qa-item">
+  <div class="qa-q">What does auth.js export?</div>
+  <div class="qa-a"><code>signToken(payload)</code> &mdash; creates a JWT. <code>validateSession(token)</code> &mdash; checks the DB for an active session. <code>getTokenFromRequest(req)</code> &mdash; extracts the cookie. <code>requireAdmin(req)</code> &mdash; ensures the user is an admin.</div>
+</div>
+
+<div class="qa-item">
+  <div class="qa-q">How does the app loader ([slug]/page.js) work?</div>
+  <div class="qa-a">When you click "Heater" on the dashboard, it navigates to <code>/apps/heater</code>. The <code>[slug]</code> page reads the slug ("heater"), checks your permissions, and loads the heater app inside an iframe pointed at <code>/apps/heater/</code>.</div>
+</div>
+</div>
+</div>
+
+<!-- ===== 3. HEATER APP ===== -->
+<div class="card">
+<h3 class="collapsible collapsed" data-target="arch-heater">3. Heater App &mdash; Fired Heater Calculator</h3>
+<div id="arch-heater" class="collapsible-content hidden">
+
+<p style="font-size:0.85rem;color:var(--muted);margin:12px 0;">
+  Built with <strong style="color:var(--text)">Express.js</strong> (Node.js). Takes 43 input parameters (fuel composition, temperatures, pressures),
+  runs them through <strong style="color:var(--text)">406 engineering formulas</strong>, and produces KPIs like thermal efficiency, excess air, and GHG rate.
+</p>
+
+<div class="folder-tree"><span class="dir">heater/</span>
+|
++-- <span class="important">server.js</span>                    <span class="comment">Entry point (like main.py) &mdash; port 3001</span>
+|
++-- <span class="dir">engine/</span>                           <span class="comment">The math (server-side only, never sent to browser)</span>
+|   +-- <span class="important">heater-engine.js</span>        <span class="comment">Orchestrator class</span>
+|   |                                    <span class="comment">  validateInputs() &rarr; calculate() &rarr; return KPIs</span>
+|   +-- <span class="important">formula-specs.js</span>        <span class="comment">4,136 lines! All 406 formula definitions</span>
+|   |                                    <span class="comment">  Each formula: {name, formula, dependencies, unit}</span>
+|   +-- <span class="file">dependency-resolver.js</span>     <span class="comment">Topological sort &mdash; runs formulas in correct order</span>
+|   +-- <span class="file">translator.js</span>              <span class="comment">Translates formula strings to executable JS</span>
+|
++-- <span class="dir">ai/</span>                               <span class="comment">Claude AI chatbot integration</span>
+|   +-- <span class="file">system-prompt.js</span>            <span class="comment">Builds the system message for Claude</span>
+|   +-- <span class="file">tool-definitions.js</span>         <span class="comment">What tools Claude can call (calculate, lookup, etc.)</span>
+|   +-- <span class="file">tool-executor.js</span>            <span class="comment">Runs the tool when Claude asks for it</span>
+|   +-- <span class="file">guardrails.js</span>               <span class="comment">Safety constraints for AI responses</span>
+|   +-- <span class="file">model-whitelist.js</span>          <span class="comment">Allowed Claude models</span>
+|
++-- <span class="dir">data/</span>
+|   +-- <span class="file">defaults.js</span>                 <span class="comment">43 default input values for quick start</span>
+|
++-- <span class="dir">lib/</span>                              <span class="comment">Same pattern as portal</span>
+|   +-- <span class="file">db.js</span>  <span class="file">auth.js</span>  <span class="file">rate-limit.js</span>  <span class="file">logger.js</span>
+|
++-- <span class="dir">routes/</span>
+|   +-- <span class="file">calculate.js</span>                <span class="comment">POST /api/calculate &rarr; run all 406 formulas</span>
+|   +-- <span class="file">chat.js</span>                     <span class="comment">POST /api/chat &rarr; Claude AI conversation</span>
+|   +-- <span class="file">scenarios.js</span>                <span class="comment">GET /api/scenarios &rarr; preset calculation templates</span>
+|   +-- <span class="file">defaults.js</span>                 <span class="comment">GET /api/defaults &rarr; default input values</span>
+|   +-- <span class="file">health.js</span>                   <span class="comment">GET /api/health &rarr; service status</span>
+|
++-- <span class="dir">public/</span>                           <span class="comment">Web UI (HTML/CSS/JS served to browser)</span>
+    +-- <span class="dir">js/</span>
+    |   +-- <span class="file">app.js</span>                   <span class="comment">Heater-specific UI initialization</span>
+    |   +-- <span class="file">chat-base.js</span>             <span class="comment">Shared chat library (from /shared/)</span>
+    |   +-- <span class="file">chat-config.js</span>           <span class="comment">Heater-specific chat settings</span>
+    |   +-- <span class="file">visual-actions-base.js</span>   <span class="comment">Shared visual actions (from /shared/)</span>
+    |   +-- <span class="file">visual-actions-config.js</span> <span class="comment">Heater-specific visual action handlers</span>
+    |   +-- <span class="file">ui-manager.js</span>            <span class="comment">Form state, tabs, panels</span>
+    |   +-- <span class="file">defaults-client.js</span>       <span class="comment">Populate form with default values</span>
+    +-- <span class="dir">css/</span>  <span class="dir">assets/</span></div>
+
+<h3 style="margin-top:14px;">How a Calculation Works (Step by Step)</h3>
+<div class="card" style="padding:12px 14px;background:var(--card2);">
+  <div class="flow-step">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <strong>User fills in 43 input fields</strong><br>
+      <span>Fuel gas flow, stack temp, O2%, fuel composition (CH4, C2H6, etc.)</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <strong>Browser sends POST /api/calculate</strong><br>
+      <span>JSON body: <code style="color:var(--accent)">{inputs: {fuel_gas_flow: 837, stack_temp: 237, ...}}</code></span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">3</div>
+    <div class="step-text">
+      <strong>HeaterEngine.validateInputs()</strong><br>
+      <span>Checks 5 required fields are present and within valid ranges</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">4</div>
+    <div class="step-text">
+      <strong>dependency-resolver.js sorts 406 formulas</strong><br>
+      <span>Uses topological sort &mdash; formula A depends on B, B depends on C, so compute C &rarr; B &rarr; A</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">5</div>
+    <div class="step-text">
+      <strong>HeaterEngine.calculate() runs all formulas in order</strong><br>
+      <span>Each formula reads from <code style="color:var(--accent)">formula-specs.js</code>, gets translated &amp; evaluated</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">6</div>
+    <div class="step-text">
+      <strong>Results returned</strong><br>
+      <span style="color:var(--green)">{kpis: {thermal_eff: 89.2, excess_air: 15.3, ...}, charts: {...}, errors: []}</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">7</div>
+    <div class="step-text">
+      <strong>Logged to database</strong><br>
+      <span>Every calculation is saved with inputs, outputs, KPIs, duration, IP address</span>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ===== 4. PUMP APP ===== -->
+<div class="card">
+<h3 class="collapsible collapsed" data-target="arch-pump">4. Pump App &mdash; Centrifugal Pump Calculator</h3>
+<div id="arch-pump" class="collapsible-content hidden">
+
+<p style="font-size:0.85rem;color:var(--muted);margin:12px 0;">
+  The <strong style="color:var(--green)">only Python app</strong> in the stack! Built with <strong style="color:var(--green)">FastAPI + NumPy + SciPy</strong>.
+  Takes pump curve datapoints, fits polynomial curves, finds the operating point, and calculates 53 formulas across 9 categories.
+</p>
+
+<div class="folder-tree"><span class="dir">pump/</span>
+|
++-- <span class="dir">src/</span>
+|   +-- <span class="py">main.py</span>                      <span class="comment">FastAPI entry point &mdash; port 3005</span>
+|   |                                    <span class="comment">  lifespan: init DB pool, rate limiter</span>
+|   |
+|   +-- <span class="dir">engine/</span>                       <span class="comment">The math (server-side)</span>
+|   |   +-- <span class="py">pump_engine.py</span>           <span class="comment">PumpEngine class &mdash; orchestrates everything</span>
+|   |   |                                <span class="comment">  validate_inputs() &rarr; calculate() &rarr; return KPIs</span>
+|   |   +-- <span class="py">curve_fitter.py</span>          <span class="comment">SciPy polynomial curve fitting</span>
+|   |   |                                <span class="comment">  Fits Q-H, Q-&eta;, Q-P, Q-NPSHr curves</span>
+|   |   +-- <span class="py">system_curve.py</span>          <span class="comment">System head calc, Reynolds number, Colebrook-White</span>
+|   |   +-- <span class="py">affinity.py</span>              <span class="comment">Affinity laws (speed/diameter change effects)</span>
+|   |   +-- <span class="py">npsh.py</span>                  <span class="comment">NPSH available &amp; required calculations</span>
+|   |   +-- <span class="py">constants.py</span>             <span class="comment">Water properties table (temp-dependent interpolation)</span>
+|   |
+|   +-- <span class="dir">ai/</span>                           <span class="comment">Claude AI chatbot (same pattern as heater)</span>
+|   |   +-- <span class="py">system_prompt.py</span>  <span class="py">tool_definitions.py</span>  <span class="py">tool_executor.py</span>  <span class="py">guardrails.py</span>
+|   |
+|   +-- <span class="dir">lib/</span>
+|   |   +-- <span class="py">db.py</span>                    <span class="comment">AsyncPG pool (async, non-blocking)</span>
+|   |   +-- <span class="py">auth.py</span>  <span class="py">rate_limit.py</span>  <span class="py">logger.py</span>
+|   |
+|   +-- <span class="dir">routes/</span>
+|   |   +-- <span class="py">calculate.py</span>             <span class="comment">POST /api/calculate &rarr; PumpEngine.calculate()</span>
+|   |   +-- <span class="py">chat.py</span>                  <span class="comment">POST /api/chat &rarr; Claude conversation</span>
+|   |   +-- <span class="py">defaults.py</span>              <span class="comment">GET /api/defaults &rarr; sample curves + metadata</span>
+|   |   +-- <span class="py">health.py</span>                <span class="comment">GET /api/health</span>
+|   |
+|   +-- <span class="dir">charts/</span>
+|       +-- <span class="py">chart_builder.py</span>         <span class="comment">Plotly chart JSON (Q-H curve, operating point)</span>
+|
++-- <span class="dir">public/</span>                           <span class="comment">Web UI</span>
+|   +-- <span class="dir">js/</span>
+|       +-- <span class="file">chart-renderer.js</span>       <span class="comment">Plotly chart rendering (curves, affinity)</span>
+|       +-- <span class="file">chat-base.js</span>  <span class="file">chat-config.js</span>  <span class="file">ui-manager.js</span>
+|
++-- <span class="py">requirements.txt</span>                 <span class="comment">fastapi, uvicorn, asyncpg, numpy, scipy, plotly, anthropic</span>
++-- <span class="file">Dockerfile</span>                      <span class="comment">python:3.11-slim</span></div>
+
+<h3 style="margin-top:14px;">How Curve Fitting Works (Plain English)</h3>
+<div class="highlight-box">
+  <strong>Problem:</strong> You have 5-7 measured datapoints from the pump manufacturer (flow vs. head, flow vs. efficiency).<br>
+  <strong>Solution:</strong> SciPy fits a polynomial curve through these points, so you can calculate the head at <em>any</em> flow rate, not just the measured ones.<br><br>
+  <strong>Example:</strong> You measure H=100m at Q=0, H=95m at Q=50, H=80m at Q=100.<br>
+  SciPy fits: <code style="color:var(--green)">H(Q) = 100 - 0.001*Q - 0.001*Q&sup2;</code><br>
+  Now you can ask: "What's the head at Q=75?" &rarr; H(75) = 91.4m
+</div>
+
+<div class="card" style="background:var(--card2);">
+  <table>
+    <thead><tr><th>KPI</th><th>What It Means</th></tr></thead>
+    <tbody>
+      <tr><td style="color:var(--green)">Pump Efficiency</td><td>How much of the motor power actually moves fluid</td></tr>
+      <tr><td style="color:var(--green)">BEP Deviation</td><td>How far from the "sweet spot" the pump is operating</td></tr>
+      <tr><td style="color:var(--green)">NPSH Margin</td><td>Safety margin before the pump starts cavitating (bubbles)</td></tr>
+      <tr><td style="color:var(--green)">Specific Speed</td><td>Classification number &mdash; radial, mixed-flow, or axial pump?</td></tr>
+      <tr><td style="color:var(--green)">Wire-to-Water</td><td>Overall efficiency from electricity to actual fluid work</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+</div>
+
+<!-- ===== 5. MASSMOLE APP ===== -->
+<div class="card">
+<h3 class="collapsible collapsed" data-target="arch-massmole">5. MassMole App &mdash; Chemical Converter</h3>
+<div id="arch-massmole" class="collapsible-content hidden">
+
+<p style="font-size:0.85rem;color:var(--muted);margin:12px 0;">
+  Built with <strong style="color:var(--text)">Express.js</strong>. Converts between mole% and mass% for gas mixtures using a database of
+  <strong style="color:var(--text)">160 chemical compounds</strong>. Also calculates stream properties (average molecular weight, LHV).
+</p>
+
+<div class="folder-tree"><span class="dir">massmole/</span>
+|
++-- <span class="important">server.js</span>                    <span class="comment">Entry point &mdash; port 3006</span>
+|
++-- <span class="dir">engine/</span>
+|   +-- <span class="important">massmole-engine.js</span>      <span class="comment">Main orchestrator</span>
+|   |                                    <span class="comment">  searchCompounds() &mdash; fuzzy search by name/formula</span>
+|   |                                    <span class="comment">  validateComposition() &mdash; check entries sum to ~100%</span>
+|   |                                    <span class="comment">  moleToMass() / massToMole() &mdash; convert</span>
+|   |                                    <span class="comment">  calculateStreamProperties() &mdash; avg MW, LHV</span>
+|   +-- <span class="important">compounds.js</span>            <span class="comment">1,644 lines! 160 compounds database</span>
+|   |                                    <span class="comment">  Each: {id, name, formula, category, mw, lhv_mass, lhv_volume}</span>
+|   +-- <span class="file">calculations.js</span>           <span class="comment">Mole/mass math, stream property calculations</span>
+|   +-- <span class="file">presets.js</span>                 <span class="comment">Pre-built compositions (natural gas, syngas, biogas)</span>
+|
++-- <span class="dir">ai/</span>                               <span class="comment">Claude AI chatbot (same pattern)</span>
++-- <span class="dir">lib/</span>                              <span class="comment">db.js, auth.js, rate-limit.js, logger.js</span>
++-- <span class="dir">routes/</span>                           <span class="comment">calculate.js, chat.js, defaults.js, presets.js, health.js</span>
++-- <span class="dir">public/</span>                           <span class="comment">Web UI (SPA)</span></div>
+
+<h3 style="margin-top:14px;">The Mole/Mass Analogy</h3>
+<div class="highlight-box">
+  Imagine you have a bag of mixed coins: 50 pennies, 30 nickels, 20 dimes.<br><br>
+  <strong>Mole%</strong> = "count basis" &mdash; 50% pennies, 30% nickels, 20% dimes (by number)<br>
+  <strong>Mass%</strong> = "weight basis" &mdash; pennies are lighter than dimes, so the weight percentages are different<br><br>
+  <strong>Molecular Weight</strong> is like the "weight of each coin type." Methane (CH<sub>4</sub>) is light (MW=16), while n-Butane (C<sub>4</sub>H<sub>10</sub>) is heavier (MW=58).
+  Converting between mole% and mass% uses these molecular weights.
+</div>
+</div>
+</div>
+
+<!-- ===== 6. OPTIMIZER APP ===== -->
+<div class="card">
+<h3 class="collapsible collapsed" data-target="arch-optimizer">6. Optimizer App &mdash; ML Feature Analysis</h3>
+<div id="arch-optimizer" class="collapsible-content hidden">
+
+<p style="font-size:0.85rem;color:var(--muted);margin:12px 0;">
+  The most unusual architecture: a <strong style="color:var(--text)">hybrid Node.js + PHP</strong> app. Node.js handles authentication and the AI chat,
+  while PHP/Apache handles the data science (feature importance, optimization).
+</p>
+
+<div class="folder-tree"><span class="dir">optimizer/</span>
+|
++-- <span class="important">server.js</span>                    <span class="comment">Node.js front-door &mdash; port 3007</span>
+|                                        <span class="comment">  Handles /api/chat and /api/health (Node.js)</span>
+|                                        <span class="comment">  Proxies ALL other routes &rarr; PHP on port 8080</span>
+|                                        <span class="comment">  Forwards cookies (PHPSESSID + eprom_token)</span>
+|
++-- <span class="dir">php/</span>                              <span class="comment">PHP/Apache application (internal port 8080)</span>
+|   +-- <span class="file">index.php</span>                   <span class="comment">Router for all proxied requests</span>
+|   +-- <span class="dir">api/</span>
+|   |   +-- <span class="file">upload-data.php</span>         <span class="comment">POST &mdash; upload CSV data file</span>
+|   |   +-- <span class="file">set-target.php</span>          <span class="comment">POST &mdash; choose target column</span>
+|   |   +-- <span class="file">run-preprocessing.php</span>   <span class="comment">POST &mdash; clean &amp; preprocess data</span>
+|   |   +-- <span class="file">run-importance.php</span>      <span class="comment">POST &mdash; SHAP / Random Forest importance</span>
+|   |   +-- <span class="file">run-optimization.php</span>    <span class="comment">POST &mdash; optimize parameters</span>
+|   |   +-- <span class="file">get-results.php</span>         <span class="comment">GET &mdash; retrieve optimization results</span>
+|   |   +-- <span class="file">get-session-state.php</span>   <span class="comment">GET &mdash; current session state</span>
+|   +-- <span class="file">preprocessing.php</span>  <span class="file">validation.php</span>  <span class="file">config.php</span>  <span class="file">helpers.php</span>
+|   +-- <span class="dir">assets/</span>                       <span class="comment">CSS, JS (chat-config.js, chat-base.js)</span>
+|
++-- <span class="dir">ai/</span>                               <span class="comment">Node.js AI layer (same pattern as other apps)</span>
++-- <span class="dir">lib/</span>                              <span class="comment">db.js, auth.js, rate-limit.js, logger.js</span>
++-- <span class="dir">routes/</span>                           <span class="comment">chat.js, health.js</span>
++-- <span class="file">start.sh</span>                         <span class="comment">Startup script &mdash; runs Apache + Node.js</span>
++-- <span class="file">Dockerfile</span>                       <span class="comment">Multi-layer: node:20 + Apache + PHP 8.2</span></div>
+
+<h3 style="margin-top:14px;">Why Hybrid Architecture?</h3>
+<div class="diagram"><span class="hl">Browser</span> &rarr; <span class="hly">Nginx</span> &rarr; <span class="hl2">Node.js</span> (port 3007)
+                              |
+                   +----------+----------+
+                   |                     |
+            <span class="hl2">/api/chat</span>          <span class="hlg">Everything else</span>
+            <span class="hl2">/api/health</span>        (proxied to PHP)
+            (handled by Node)          |
+                                       v
+                                <span class="hlg">Apache/PHP</span> (port 8080)
+                                Upload CSV, preprocess,
+                                run importance, optimize</div>
+
+<div class="qa-item" style="margin-top:10px;">
+  <div class="qa-q">Why not just use Node.js or just PHP?</div>
+  <div class="qa-a">The ML feature importance code already existed in PHP (from a friend's repo). Rather than rewriting it, Node.js acts as a "front door" that handles auth + AI chat (which all apps need), and proxies the data science to PHP. Best of both worlds.</div>
+</div>
+
+<div class="qa-item">
+  <div class="qa-q">What's the data pipeline?</div>
+  <div class="qa-a">Upload CSV &rarr; Preprocess (clean data) &rarr; Set Target Column &rarr; Run Feature Importance (SHAP/Random Forest) &rarr; Run Optimization (find optimal parameter values). Each step builds on the previous one.</div>
+</div>
+</div>
+</div>
+
+<!-- ===== 7. SHARED LIBRARIES ===== -->
+<div class="card">
+<h3 class="collapsible collapsed" data-target="arch-shared">7. Shared Libraries &mdash; DRY Code</h3>
+<div id="arch-shared" class="collapsible-content hidden">
+
+<p style="font-size:0.85rem;color:var(--muted);margin:12px 0;">
+  Two JavaScript files are <strong style="color:var(--text)">shared across all 4 calculator apps</strong> (heater, pump, massmole, optimizer).
+  They live in <code style="color:var(--accent)">/shared/</code> and are copied into each app's <code>public/js/</code> folder.
+</p>
+
+<div class="card" style="background:var(--card2);">
+  <strong style="color:var(--accent)">chat-base.js</strong> <span class="badge badge-blue">1000+ lines</span>
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:6px;">
+    Universal chatbot client that runs in the browser. Every app uses the same chat code &mdash; they just pass different config.
+  </p>
+  <table style="margin-top:8px;">
+    <thead><tr><th>Feature</th><th>How It Works</th></tr></thead>
+    <tbody>
+      <tr><td style="color:var(--accent)">Streaming</td><td>Responses appear word-by-word via SSE (Server-Sent Events)</td></tr>
+      <tr><td style="color:var(--accent)">History</td><td>Chat history persisted to localStorage (per app, per user)</td></tr>
+      <tr><td style="color:var(--accent)">Markdown</td><td>AI responses rendered as HTML (tables, code blocks, bold, etc.)</td></tr>
+      <tr><td style="color:var(--accent)">Shortcuts</td><td>Enter=send, Shift+Enter=newline, Escape=close, Ctrl+/=toggle</td></tr>
+      <tr><td style="color:var(--accent)">Auto-resize</td><td>Textarea grows as you type (up to 4 rows)</td></tr>
+      <tr><td style="color:var(--accent)">Quick Chips</td><td>Suggestion buttons after a calculation ("What next?", "Optimize", etc.)</td></tr>
+      <tr><td style="color:var(--accent)">Access Check</td><td>Detects 403 Forbidden (no subscription/permission) and shows message</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card" style="background:var(--card2);margin-top:10px;">
+  <strong style="color:var(--accent)">visual-actions-base.js</strong> <span class="badge badge-blue">500+ lines</span>
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:6px;">
+    Handles interactive elements inside chat messages &mdash; copy buttons, code blocks, tables, timestamps.
+  </p>
+  <table style="margin-top:8px;">
+    <thead><tr><th>Action</th><th>What It Does</th></tr></thead>
+    <tbody>
+      <tr><td style="color:var(--accent)">Copy Code</td><td>Click to copy code snippets to clipboard</td></tr>
+      <tr><td style="color:var(--accent)">Copy JSON</td><td>Copy data as JSON</td></tr>
+      <tr><td style="color:var(--accent)">Timestamps</td><td>Show when each message was created</td></tr>
+      <tr><td style="color:var(--accent)">Markdown Tables</td><td>Render JSONB results as formatted tables</td></tr>
+      <tr><td style="color:var(--accent)">Syntax Highlighting</td><td>Code blocks with language detection</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="highlight-box" style="margin-top:10px;">
+  <strong>Config Pattern:</strong> Each app creates a config object with app-specific settings (avatar, endpoint, CSS classes, payload builder)
+  and passes it to <code style="color:var(--accent)">new ChatBase(config)</code>. The library handles everything else.
+  This means adding chat to a new app takes ~20 lines of config code.
+</div>
+</div>
+</div>
+
+<!-- ===== 8. DATABASE TABLES ===== -->
+<div class="card">
+<h3 class="collapsible collapsed" data-target="arch-db">8. Database Tables &mdash; Complete Schema</h3>
+<div id="arch-db" class="collapsible-content hidden">
+
+<p style="font-size:0.85rem;color:var(--muted);margin:12px 0;">
+  PostgreSQL 16. All tables defined in <code style="color:var(--accent)">db/init.sql</code> (runs automatically on first Docker start).
+</p>
+
+<h3 style="color:var(--yellow);">Core Tables (Auth &amp; Users)</h3>
+<div class="card" style="background:var(--card2);overflow-x:auto;">
+  <table>
+    <thead><tr><th>Table</th><th>Key Columns</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">users</td>
+        <td style="font-size:0.75rem;color:var(--muted)">id, email, full_name, password_hash, role, is_active, user_number</td>
+        <td>Every registered user. Role is 'admin' or 'viewer'. Password is bcrypt hashed.</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">sessions</td>
+        <td style="font-size:0.75rem;color:var(--muted)">id, user_id, token_hash, expires_at, ip_address, user_agent</td>
+        <td>Active login sessions. token_hash = SHA256 of the JWT (for revocation).</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">apps</td>
+        <td style="font-size:0.75rem;color:var(--muted)">id, name, display_name, url_slug, icon, port, is_active</td>
+        <td>Registry of all apps (heater, pump, massmole, optimizer, carbon, sensors, leak).</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">user_app_permissions</td>
+        <td style="font-size:0.75rem;color:var(--muted)">id, user_id, app_name, can_access, granted_by, granted_at</td>
+        <td>Which user can access which app. Many-to-many relationship.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 style="color:var(--yellow);">Subscription Tables</h3>
+<div class="card" style="background:var(--card2);overflow-x:auto;">
+  <table>
+    <thead><tr><th>Table</th><th>Key Columns</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">subscription_plans</td>
+        <td style="font-size:0.75rem;color:var(--muted)">id, name, display_name, apps (JSONB), has_ai_access, color</td>
+        <td>Plans: basic, professional, enterprise. Each defines which apps &amp; AI access.</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">user_subscriptions</td>
+        <td style="font-size:0.75rem;color:var(--muted)">id, user_id, plan_id, starts_at, expires_at, is_active, granted_by</td>
+        <td>Which user has which plan, when it expires.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 style="color:var(--yellow);">Logging Tables (per app)</h3>
+<div class="card" style="background:var(--card2);overflow-x:auto;">
+  <table>
+    <thead><tr><th>Table</th><th>Key Columns</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">activity_logs</td>
+        <td style="font-size:0.75rem;color:var(--muted)">user_id, app_name, action, input_summary, result_summary, duration_ms</td>
+        <td>Audit trail &mdash; who did what, when, across all apps.</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">heater_calculation_logs</td>
+        <td style="font-size:0.75rem;color:var(--muted)">inputs (JSONB), outputs (JSONB), kpi_thermal_eff, kpi_fuel_eff, kpi_excess_air, kpi_ghg_rate, formula_count, duration_ms</td>
+        <td>Every heater calculation with full input/output snapshots.</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">pump_calculation_logs</td>
+        <td style="font-size:0.75rem;color:var(--muted)">inputs, outputs, kpi_pump_eff, kpi_bep_dev, kpi_power, kpi_npsh_margin, kpi_specific_speed, kpi_wire_to_water</td>
+        <td>Every pump calculation.</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">massmole_calculation_logs</td>
+        <td style="font-size:0.75rem;color:var(--muted)">inputs, outputs, input_basis, compound_count, avg_mw, lhv_mass, lhv_volume</td>
+        <td>Every mass/mole conversion.</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">optimizer_calculation_logs</td>
+        <td style="font-size:0.75rem;color:var(--muted)">calc_type, inputs, outputs, feature_count, target_column, improvement_pct, iterations</td>
+        <td>Every optimization run (importance or optimization).</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3 style="color:var(--yellow);">Chat Logs (per app)</h3>
+<div class="card" style="background:var(--card2);overflow-x:auto;">
+  <table>
+    <thead><tr><th>Table</th><th>Key Columns</th></tr></thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">heater_chat_logs</td>
+        <td style="font-size:0.75rem;color:var(--muted)">conversation_id, role (user/assistant), content, tool_calls (JSONB), model, tokens_input, tokens_output</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">pump_chat_logs</td>
+        <td style="font-size:0.75rem;color:var(--muted)">(same structure as heater_chat_logs)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">massmole_chat_logs</td>
+        <td style="font-size:0.75rem;color:var(--muted)">(same structure)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent);white-space:nowrap">optimizer_chat_logs</td>
+        <td style="font-size:0.75rem;color:var(--muted)">(same structure)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="highlight-box" style="margin-top:10px;">
+  <strong>Total:</strong> 13 tables. All queries use parameterized SQL (<code style="color:var(--accent)">$1, $2</code>) &mdash; no SQL injection possible.
+  JSONB columns store full input/output snapshots for forensic analysis.
+</div>
+</div>
+</div>
+
+<!-- ===== 9. HOW SECURITY WORKS ===== -->
+<div class="card">
+<h3 class="collapsible collapsed" data-target="arch-security">9. How Security Works</h3>
+<div id="arch-security" class="collapsible-content hidden">
+
+<h3 style="color:var(--yellow);margin-top:12px;">The Login Flow (Step by Step)</h3>
+<div class="card" style="padding:12px 14px;background:var(--card2);">
+  <div class="flow-step">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <strong>User submits email + password</strong><br>
+      <span>Rate limiter checks: has this IP tried more than 5 times in 15 minutes? If yes, block.</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <strong>Server looks up user in database</strong><br>
+      <span>Finds the bcrypt hash stored at signup. Uses <code style="color:var(--accent)">bcrypt.compare()</code> to check.</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">3</div>
+    <div class="step-text">
+      <strong>Creates a JWT token</strong><br>
+      <span>Contains: <code style="color:var(--accent)">{user_id: 5, role: "viewer", email: "..."}</code>. Signed with SECRET_KEY.</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">4</div>
+    <div class="step-text">
+      <strong>Stores session in database</strong><br>
+      <span>Saves SHA256(token) + expiry + IP address + user agent. This allows server-side logout.</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">5</div>
+    <div class="step-text">
+      <strong>Sets httpOnly cookie</strong><br>
+      <span style="color:var(--green)">Cookie flags: httpOnly (JS can't read it), secure (HTTPS only), sameSite: lax</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">6</div>
+    <div class="step-text">
+      <strong>Every subsequent request</strong><br>
+      <span>Browser automatically sends the cookie. Server verifies JWT signature + checks session in DB.</span>
+    </div>
+  </div>
+</div>
+
+<h3 style="color:var(--yellow);margin-top:14px;">Security Layers</h3>
+<div class="card" style="background:var(--card2);">
+  <table>
+    <thead><tr><th>Layer</th><th>What</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--green)">bcrypt</td>
+        <td>Passwords hashed (cost factor 12)</td>
+        <td>Even if DB is stolen, passwords can't be reversed</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">JWT</td>
+        <td>Signed tokens (can't be forged)</td>
+        <td>Stateless auth &mdash; any app can verify without calling portal</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">httpOnly cookies</td>
+        <td>JavaScript can't read the cookie</td>
+        <td>Prevents XSS attacks from stealing tokens</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">DB sessions</td>
+        <td>Token hash stored in sessions table</td>
+        <td>Allows server-side logout (delete session = force logout)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">Rate limiting</td>
+        <td>5 attempts per 15 min per IP</td>
+        <td>Prevents brute-force password guessing</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">Per-app permissions</td>
+        <td>user_app_permissions table</td>
+        <td>User A can access heater but not pump</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">Subscription plans</td>
+        <td>Basic/Professional/Enterprise</td>
+        <td>Controls which apps + AI access each user gets</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">Parameterized SQL</td>
+        <td>All queries use $1, $2 placeholders</td>
+        <td>Impossible to inject SQL</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">Admin vs Viewer</td>
+        <td>Role-based access control</td>
+        <td>Only admins can manage users, view all logs, grant permissions</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="warning-box" style="margin-top:10px;">
+  <strong>Key rule:</strong> JWT tokens are <em>never</em> returned in API response bodies &mdash; only set as httpOnly cookies.
+  User role/permissions always come from the server (<code>/api/auth/me</code>), never trusted from localStorage.
+</div>
+</div>
+</div>
+
+<!-- ===== 10. HOW AI CHAT WORKS ===== -->
+<div class="card">
+<h3 class="collapsible collapsed" data-target="arch-ai">10. How the AI Chat Works</h3>
+<div id="arch-ai" class="collapsible-content hidden">
+
+<p style="font-size:0.85rem;color:var(--muted);margin:12px 0;">
+  Every calculator app has a Claude AI chat assistant. Here's how it works behind the scenes:
+</p>
+
+<div class="card" style="padding:12px 14px;background:var(--card2);">
+  <div class="flow-step">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <strong>User types a message</strong><br>
+      <span>Example: "What can I do to improve the thermal efficiency?"</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <strong>Browser sends POST /api/chat</strong><br>
+      <span>Includes: message, conversation ID, selected model, and the auth cookie</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">3</div>
+    <div class="step-text">
+      <strong>Server builds a system prompt</strong><br>
+      <span>Includes: current calculation results, available tools, guardrails (safety rules)</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">4</div>
+    <div class="step-text">
+      <strong>Server calls Claude API</strong><br>
+      <span>Sends conversation history + system prompt + tool definitions to Anthropic's API</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">5</div>
+    <div class="step-text">
+      <strong>Claude may use tools</strong><br>
+      <span>Claude can call tools like <code style="color:var(--accent)">calculate()</code> to re-run formulas with different inputs,
+      or <code style="color:var(--accent)">get_field_reference()</code> to look up formula details</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">6</div>
+    <div class="step-text">
+      <strong>Response streamed back via SSE</strong><br>
+      <span>Words appear one-by-one in the chat UI (Server-Sent Events)</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">7</div>
+    <div class="step-text">
+      <strong>Everything logged to database</strong><br>
+      <span>Message content, tool calls, model used, token counts, IP address</span>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:14px;">What Are "Tools"?</h3>
+<div class="highlight-box">
+  <strong>Tool Use</strong> is like giving Claude a set of functions it can call.
+  Instead of just answering with text, Claude can say: <em>"I need to run a calculation first"</em>,
+  then call the <code style="color:var(--accent)">calculate()</code> tool with modified inputs, get the result, and then explain what changed.<br><br>
+  <strong>Example flow:</strong><br>
+  User: "What if I increase excess air by 5%?"<br>
+  Claude: <em>calls calculate({...currentInputs, excess_air: currentValue + 5})</em><br>
+  Claude: "Increasing excess air by 5% would reduce thermal efficiency from 89.2% to 87.8%..."
+</div>
+
+<div class="card" style="background:var(--card2);margin-top:10px;">
+  <table>
+    <thead><tr><th>Component</th><th>File</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--accent)">system-prompt.js</td>
+        <td style="font-size:0.75rem;color:var(--muted)">ai/</td>
+        <td>Builds the system message with current results context</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">tool-definitions.js</td>
+        <td style="font-size:0.75rem;color:var(--muted)">ai/</td>
+        <td>Defines what tools Claude can call (JSON schema)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">tool-executor.js</td>
+        <td style="font-size:0.75rem;color:var(--muted)">ai/</td>
+        <td>Actually runs the tool when Claude asks (calls the engine)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">guardrails.js</td>
+        <td style="font-size:0.75rem;color:var(--muted)">ai/</td>
+        <td>Safety rules &mdash; what Claude can/can't do</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">model-whitelist.js</td>
+        <td style="font-size:0.75rem;color:var(--muted)">ai/</td>
+        <td>Allowed Claude models (prevents using unauthorized models)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+</div>
+
+<!-- ===== 11. HOW DEPLOYMENT WORKS ===== -->
+<div class="card">
+<h3 class="collapsible collapsed" data-target="arch-deploy">11. How Deployment Works</h3>
+<div id="arch-deploy" class="collapsible-content hidden">
+
+<p style="font-size:0.85rem;color:var(--muted);margin:12px 0;">
+  There are <strong style="color:var(--text)">two servers</strong> and <strong style="color:var(--text)">multiple development machines</strong>.
+  Code flows from development &rarr; staging (EC2) &rarr; production (company VM).
+</p>
+
+<div class="diagram"><span class="hl">Home Laptop</span> (WSL2)     <span class="hl2">Claude Code</span> (cloud)
+      |                          |
+      +--- git push/pull --------+--- GitHub (private repo)
+      |                          |
+      +--- rsync (no --delete!) -+
+      |                          |
+      v                          v
+<span class="hly">AWS EC2</span> (staging)          <span class="hly">AWS EC2</span> (staging)
+18.198.1.231                18.198.1.231
+      |
+      | rsync (after testing)
+      v
+<span class="hlg">Company VM</span> (production)
+192.168.50.202</div>
+
+<h3 style="margin-top:14px;">The Full Deployment Cycle</h3>
+<div class="card" style="padding:12px 14px;background:var(--card2);">
+  <div class="flow-step">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <strong>Edit code on laptop (or cloud)</strong><br>
+      <span>Make changes in the local repo</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <strong>rsync to EC2 (staging)</strong><br>
+      <span><code style="color:var(--accent);font-size:0.75rem">rsync -avz -e "ssh -i ~/eprom-aws-key.pem" portal/src/ ubuntu@18.198.1.231:/opt/eprom/portal/src/</code></span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">3</div>
+    <div class="step-text">
+      <strong>Build &amp; restart on EC2</strong><br>
+      <span><code style="color:var(--accent);font-size:0.75rem">ssh ... "cd /opt/eprom && docker compose up -d --build portal"</code></span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">4</div>
+    <div class="step-text">
+      <strong>Test on staging</strong><br>
+      <span>Visit <code style="color:var(--accent)">https://eprom-portal.xyz</code> and verify everything works</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">5</div>
+    <div class="step-text">
+      <strong>rsync to company VM (production)</strong><br>
+      <span><code style="color:var(--accent);font-size:0.75rem">rsync -avz -e "sshpass -p '...' ssh ..." portal/src/ ai@192.168.50.202:/opt/eprom/portal/src/</code></span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">6</div>
+    <div class="step-text">
+      <strong>Build &amp; restart on production</strong><br>
+      <span>Same docker compose command on company VM</span>
+    </div>
+  </div>
+  <div class="flow-step">
+    <div class="step-num">7</div>
+    <div class="step-text">
+      <strong>git commit &amp; push</strong><br>
+      <span>Save to GitHub for backup and collaboration</span>
+    </div>
+  </div>
+</div>
+
+<div class="warning-box" style="margin-top:10px;">
+  <strong>NEVER use <code>rsync --delete</code></strong> &mdash; it once destroyed critical VM-only files (db.js, auth.js, logout endpoint).
+  Recovery was only possible because the Docker container was still running with the old code.
+</div>
+
+<h3 style="margin-top:14px;">What's Different Between VMs</h3>
+<div class="card" style="background:var(--card2);">
+  <table>
+    <thead><tr><th>File</th><th>Why It's Different</th></tr></thead>
+    <tbody>
+      <tr><td style="color:var(--accent)">.env</td><td>Different passwords, URLs, API keys</td></tr>
+      <tr><td style="color:var(--accent)">docker-compose.override.yml</td><td>Only on company VM (resource limits: 19 GB / 8 CPU)</td></tr>
+      <tr><td style="color:var(--accent)">Nginx config</td><td>Different domain names, SSL certificates</td></tr>
+      <tr><td style="color:var(--accent)">/opt/eprom/backups/</td><td>Local backups (daily cron, 7-day retention)</td></tr>
+      <tr><td style="color:var(--accent)">/opt/eprom/reports/</td><td>370 MB of static HTML reports</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+</div>
+
+<!-- ===== 12. TECHNOLOGY STACK ===== -->
+<div class="card">
+<h3 class="collapsible collapsed" data-target="arch-tech">12. Technology Stack &mdash; Every Tech Explained</h3>
+<div id="arch-tech" class="collapsible-content hidden">
+
+<div class="card" style="background:var(--card2);overflow-x:auto;margin-top:12px;">
+  <table>
+    <thead><tr><th>Technology</th><th>What It Is (Python Analogy)</th><th>Where It's Used</th></tr></thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--accent)">Next.js 14</td>
+        <td>Like Django &mdash; serves web pages + API routes</td>
+        <td>Portal (main website)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">Express.js</td>
+        <td>Like Flask &mdash; lightweight web framework</td>
+        <td>Heater, MassMole, Optimizer (Node.js layer)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">FastAPI</td>
+        <td>You know this one! Async Python web framework</td>
+        <td>Pump app</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">React 18</td>
+        <td>Like Jinja2 templates but interactive</td>
+        <td>Portal frontend (pages, components)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">Node.js 20</td>
+        <td>Like Python runtime &mdash; runs JavaScript server-side</td>
+        <td>Portal, Heater, MassMole, Optimizer</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">PostgreSQL 16</td>
+        <td>Like SQLite but multi-user, production-grade</td>
+        <td>All apps (shared database)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">Docker</td>
+        <td>Like virtualenv but for the entire OS</td>
+        <td>Every service runs in its own container</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">Docker Compose</td>
+        <td>Like a requirements.txt for containers</td>
+        <td>Orchestrates all 6 containers</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">Nginx</td>
+        <td>Like a reverse proxy / load balancer</td>
+        <td>Routes /apps/heater/ &rarr; port 3001, etc.</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">JWT (JSON Web Tokens)</td>
+        <td>Like a signed ticket &mdash; proves identity</td>
+        <td>Authentication across all apps</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">bcrypt</td>
+        <td>Like hashlib but designed for passwords</td>
+        <td>Password hashing (cost factor 12)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">NumPy / SciPy</td>
+        <td>You know these! Numerical computing</td>
+        <td>Pump app (curve fitting, interpolation)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">Plotly</td>
+        <td>Interactive chart library</td>
+        <td>Pump app (Q-H curves, operating point charts)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">ApexCharts</td>
+        <td>Another chart library (JavaScript)</td>
+        <td>Heater app, Portal dashboard</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">Claude API</td>
+        <td>Anthropic's AI API (like OpenAI's API)</td>
+        <td>AI chat in all 4 calculator apps</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">Tailwind CSS</td>
+        <td>Utility-first CSS framework</td>
+        <td>Portal (styling)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">PHP 8.2 / Apache</td>
+        <td>Traditional web stack</td>
+        <td>Optimizer (ML backend only)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green)">AsyncPG</td>
+        <td>Like psycopg2 but async</td>
+        <td>Pump app (non-blocking DB queries)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">Nodemailer</td>
+        <td>Like smtplib &mdash; sends emails</td>
+        <td>Portal (verification emails)</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent)">Recharts</td>
+        <td>React chart library</td>
+        <td>Portal dashboard (stats visualizations)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+</div>
+
+<!-- ===== 13. NUMBERS AT A GLANCE ===== -->
+<div class="card">
+<h3 class="collapsible collapsed" data-target="arch-numbers">13. Numbers at a Glance</h3>
+<div id="arch-numbers" class="collapsible-content hidden">
+
+<div class="card" style="background:var(--card2);overflow-x:auto;margin-top:12px;">
+  <table>
+    <thead><tr><th>Metric</th><th>Number</th></tr></thead>
+    <tbody>
+      <tr><td style="color:var(--muted)">Docker containers</td><td><strong>6</strong> (db + 5 apps)</td></tr>
+      <tr><td style="color:var(--muted)">Calculator apps</td><td><strong>4</strong> live (heater, pump, massmole, optimizer)</td></tr>
+      <tr><td style="color:var(--muted)">Planned apps</td><td><strong>3</strong> (carbon, sensors, leak detection)</td></tr>
+      <tr><td style="color:var(--muted)">Heater formulas</td><td><strong>406</strong> (dependency-resolved)</td></tr>
+      <tr><td style="color:var(--muted)">Heater input parameters</td><td><strong>43</strong></td></tr>
+      <tr><td style="color:var(--muted)">Pump formulas</td><td><strong>53</strong> across 9 categories</td></tr>
+      <tr><td style="color:var(--muted)">Chemical compounds</td><td><strong>160</strong> in MassMole database</td></tr>
+      <tr><td style="color:var(--muted)">Database tables</td><td><strong>13</strong></td></tr>
+      <tr><td style="color:var(--muted)">AI chatbots</td><td><strong>4</strong> (one per calculator app)</td></tr>
+      <tr><td style="color:var(--muted)">Programming languages</td><td><strong>4</strong> (JavaScript, Python, PHP, SQL)</td></tr>
+      <tr><td style="color:var(--muted)">formula-specs.js lines</td><td><strong>4,136</strong></td></tr>
+      <tr><td style="color:var(--muted)">compounds.js lines</td><td><strong>1,644</strong></td></tr>
+      <tr><td style="color:var(--muted)">Static reports</td><td><strong>370 MB</strong> of HTML</td></tr>
+      <tr><td style="color:var(--muted)">EC2 instance</td><td><strong>t3.micro</strong> (2 vCPU, 1 GB RAM + 2 GB swap)</td></tr>
+      <tr><td style="color:var(--muted)">Company VM</td><td><strong>8 CPU, 24 GB RAM, 80 GB disk</strong></td></tr>
+      <tr><td style="color:var(--muted)">Shared chat library</td><td><strong>1,000+</strong> lines (chat-base.js)</td></tr>
+      <tr><td style="color:var(--muted)">Auth: cookie flags</td><td>httpOnly, secure, sameSite: lax</td></tr>
+      <tr><td style="color:var(--muted)">Rate limit (login)</td><td><strong>5</strong> attempts per 15 minutes per IP</td></tr>
+      <tr><td style="color:var(--muted)">bcrypt cost factor</td><td><strong>12</strong></td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+</div>
+
+</section>
+
+<!-- Collapsible section toggle script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.collapsible').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var targetId = this.getAttribute('data-target');
+      var content = document.getElementById(targetId);
+      if (!content) return;
+      this.classList.toggle('collapsed');
+      content.classList.toggle('hidden');
+    });
+  });
+});
+</script>
+
 <div style="text-align:center;margin:32px 0 16px;color:var(--muted);font-size:0.75rem;">
-  EPROM Portal Architecture Guide &mdash; Generated March 4, 2026
+  EPROM Portal Architecture Guide &mdash; Updated March 11, 2026
 </div>
 
 </body>
