@@ -75,7 +75,7 @@ Alkanes, Alkenes, Alkynes, Aromatics, Alcohols, Acids, Aldehydes, Ketones, Ether
 
 ### Overview
 
-The Feature Optimizer is an ML-based tool for feature importance analysis and parameter optimization. It uses a unique Express.js + PHP hybrid architecture — Node.js handles routing, auth, and AI chat, while PHP handles the ML computation (correlation analysis, genetic algorithms, cross-validation).
+The Feature Optimizer is an ML-based tool for feature importance analysis and parameter optimization. It uses a unique Express.js + PHP hybrid architecture — Node.js handles routing, auth, and AI chat (port 3007), while PHP/Apache handles the ML computation (port 8080, internal only). Uses Pearson correlation for importance ranking and random search (10,000 iterations) for optimization.
 
 **URL:** https://eprom-portal.xyz/apps/optimizer/
 **Container:** `eprom_optimizer`
@@ -89,7 +89,7 @@ The Feature Optimizer is an ML-based tool for feature importance analysis and pa
 | **1. Upload** | User uploads a CSV dataset |
 | **2. Data Quality & Preprocessing** | `DataPreprocessor` class scans for issues: missing values, text in numeric columns, outliers, duplicates, infinite values, constant columns. User can auto-fix or manually adjust. |
 | **3. Feature Importance** | Correlation analysis ranks features by importance relative to a target variable. Configurable threshold for filtering. |
-| **4. Optimization** | Genetic algorithm optimizes feature values to maximize/minimize the target variable. Uses `CrossValidator` with 5-fold CV for model validation. |
+| **4. Optimization** | Random search (10,000 iterations) optimizes feature values to maximize/minimize the target variable. Uses linear or polynomial regression models. `CrossValidator` with 5-fold CV validates model quality (R², RMSE, MAE). |
 | **5. Results** | Optimized parameter values, predicted target value, improvement percentage, model metrics (R², RMSE, MAE). |
 
 ### Key PHP Classes
@@ -99,16 +99,20 @@ The Feature Optimizer is an ML-based tool for feature importance analysis and pa
 | `DataPreprocessor` | `php/preprocessing.php` | Scans and preprocesses uploaded data (6 issue types) |
 | `CrossValidator` | `php/validation.php` | 5-fold cross-validation with R², RMSE, MAE metrics |
 
-### AI Chat — 4 Tools
+### AI Chat — 8 Tools
 
 | Tool | What It Does |
 |------|-------------|
-| `run_importance` | Triggers feature importance analysis |
-| `run_optimization` | Triggers parameter optimization |
-| `run_preprocessing` | Triggers data preprocessing |
-| `get_session_state` | Gets current workflow state (which step, results so far) |
+| `upload_data` | Upload CSV data as text (headers + data rows) |
+| `set_target_column` | Set the target (Y) variable column name |
+| `run_preprocessing` | Clean data: handle missing values, text in numeric columns, outliers, duplicates |
+| `calculate_importance` | Pearson correlation analysis to rank features; auto-detects cutoff via elbow method |
+| `run_optimization` | Random search (10,000 iterations) to find optimal X values; linear or polynomial model |
+| `get_results` | Get session state by section (data, importance, optimization, all) |
+| `get_data_summary` | Get loaded dataset summary: columns, row count, basic statistics |
+| `show_insight` | Display ML educational insight card (tip, warning, info, benchmark) |
 
-The AI tool executor routes tool calls to PHP API endpoints:
+The AI tool executor routes tool calls to PHP API endpoints on port 8080:
 - `php/api/run-importance.php`
 - `php/api/run-optimization.php`
 - `php/api/run-preprocessing.php`

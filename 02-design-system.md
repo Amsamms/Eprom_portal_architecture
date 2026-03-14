@@ -89,7 +89,21 @@ From `portal/src/app/globals.css`:
 }
 ```
 
-The heater app (`heater/public/css/main.css`) defines its own set of matching tokens for use outside the portal's Tailwind context. All apps were unified to the same light theme in Session 40.
+The heater app (`heater/public/css/main.css`) defines its own extended set of tokens:
+
+```css
+/* Heater-specific tokens (in addition to matching portal colors) */
+--eprom-radius-sm: 4px;
+--eprom-radius-md: 8px;
+--eprom-radius-lg: 12px;
+--eprom-radius-pill: 50px;
+--eprom-shadow-sm: 0 1px 3px rgba(0,82,155,0.06);
+--eprom-shadow-md: 0 4px 12px rgba(0,82,155,0.08);
+--eprom-shadow-lg: 0 8px 24px rgba(0,82,155,0.12);
+/* Font: Inter (not Public Sans) for app UI */
+```
+
+All apps were unified to the same light theme in Session 40.
 
 ---
 

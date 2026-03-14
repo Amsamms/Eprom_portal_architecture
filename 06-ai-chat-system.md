@@ -217,7 +217,7 @@ Chat conversations are stored in two places:
 
 | App | Tools | Visual Actions | Model Default |
 |-----|-------|---------------|---------------|
-| Heater | 7 | Yes (cursor fills form fields) | Haiku |
-| Pump | 6 | Yes (with before/after hooks) | Haiku |
-| MassMole | 8 | No (uses action callbacks) | Haiku |
-| Optimizer | 4 | No (routes to PHP API) | Haiku |
+| Heater | 7 (fill_inputs, trigger_calculate, get_current_results, get_current_inputs, load_scenario, scroll_to_section, show_insight) | Yes (cursor fills form fields) | Haiku |
+| Pump | 6 (fill_inputs, trigger_calculate, get_current_results, get_current_inputs, show_insight, display_results) | Yes (with before/after hooks) | Haiku |
+| MassMole | 8 (search_compound, get_compound_details, fill_composition, run_calculation, load_preset, clear_composition, switch_basis, show_insight) | No (uses action callbacks) | Haiku |
+| Optimizer | 8 (upload_data, set_target_column, run_preprocessing, calculate_importance, run_optimization, get_results, get_data_summary, show_insight) | No (routes to PHP API) | Haiku |

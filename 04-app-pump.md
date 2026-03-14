@@ -87,12 +87,12 @@ Charts are generated as Plotly JSON on the server and rendered client-side using
 
 | Tool | What It Does |
 |------|-------------|
-| `run_calculation` | Executes all 53 formulas, returns KPIs + chart data |
-| `fill_input_fields` | Fills pump input fields (triggers animated cursor) |
-| `get_current_inputs` | Reads current form values |
-| `compare_scenarios` | Runs multiple parameter sets and produces comparison |
-| `analyze_sensitivity` | Varies one input parameter, measures KPI sensitivity |
-| `detect_anomalies` | Checks inputs against expected ranges |
+| `fill_inputs` | Fills one or more input fields (scalar values or curve point arrays) |
+| `trigger_calculate` | Runs pump performance calculation with current inputs |
+| `get_current_results` | Reads calculation results by section (kpis, operating_point, npsh, power, all) |
+| `get_current_inputs` | Reads current input values by section (pump, system, fluid, npsh, curve_points, all) |
+| `show_insight` | Displays engineering insight card in chat (tip, warning, info, benchmark) |
+| `display_results` | Renders calculation results and charts on the UI |
 
 ### Visual Actions
 

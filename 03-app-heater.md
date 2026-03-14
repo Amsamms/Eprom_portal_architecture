@@ -68,13 +68,13 @@ The AI (Claude Haiku by default) has access to 7 server-side tools:
 
 | Tool | What It Does |
 |------|-------------|
-| `run_calculation` | Executes all 406 formulas with given inputs, returns KPIs and results |
-| `fill_input_fields` | Fills specific input fields on the form (triggers visual cursor animation) |
-| `load_scenario` | Loads one of 7 predefined scenarios |
-| `get_current_inputs` | Reads the current form values |
-| `compare_scenarios` | Runs multiple scenarios and produces a comparison table |
-| `analyze_sensitivity` | Sensitivity analysis — varies one input, measures KPI impact |
-| `detect_anomalies` | Checks inputs against expected ranges, flags outliers |
+| `fill_inputs` | Fills one or more input fields with values (triggers visual cursor animation) |
+| `trigger_calculate` | Clicks the Calculate button to run all 406 formulas |
+| `get_current_results` | Reads current calculation results by section (kpis, fuel_data, performance, all) |
+| `get_current_inputs` | Reads all 43 current input field values by section |
+| `load_scenario` | Loads one of 7 predefined scenario presets (with optional auto-calculate) |
+| `scroll_to_section` | Scrolls the page to a specific UI section (kpi-section, charts-section, etc.) |
+| `show_insight` | Displays an engineering insight card in chat (tip, warning, info, benchmark) |
 
 ### Visual Actions
 
