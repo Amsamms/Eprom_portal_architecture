@@ -6,7 +6,9 @@
 
 ## What is EPROM?
 
-EPROM (Egyptian Petroleum Research Organization for Midstream) is an Egyptian petroleum company operating in the midstream sector. The organization has decades of institutional knowledge in process engineering, equipment analysis, and operational standards.
+EPROM (Egyptian Projects Operation & Maintenance) is the largest operation and maintenance company in Egypt and North Africa, operating across the entire oil & gas value chain — from upstream gas processing and SCADA pipelines to downstream refineries, petrochemical plants, fertilizer factories, and marine terminals.
+
+Originally founded in 2002 as MIDOM (Middle East for Operation & Maintenance of Oil Refineries), the company operates under the Egyptian General Petroleum Corporation (EGPC). Led by Chairman Eng. Hossam Asaad, EPROM employs over 1,000 staff and offers services spanning O&M, commissioning, process safety management, CEMS, and training (300+ courses, 150+ instructors). The company also has international projects in Nigeria and across the Middle East and Africa.
 
 ## What is the EPROM Portal?
 
@@ -34,8 +36,8 @@ Every calculation app includes an **AI Chat Assistant** ("EPROM AI Companion") p
 
 ## Business Context
 
-### EGYPS Exhibition
-The immediate catalyst for the project was the upcoming **EGYPS** (Egypt Petroleum Show) exhibition. The portal serves as a high-visibility demonstration for the Chairman, the Authority, and the Ministry of Petroleum. A free one-week trial was planned to allow officials to observe live system outputs and validate ROI.
+### EGYPES Exhibition
+The immediate catalyst for the project was the upcoming **EGYPES** (Egypt Energy Show), 30 March – 1 April 2026 at the Egypt International Exhibition Center. The portal serves as a high-visibility demonstration for the Chairman, the Authority, and the Ministry of Petroleum. A free one-week trial was planned to allow officials to observe live system outputs and validate ROI.
 
 ### The "Smart Engine" Vision
 The portal is part of a broader initiative called **"Smart Engine"** — the strategic convergence of Process Engineering and Digital Transformation. It covers six pillars:
@@ -62,7 +64,7 @@ A formal IT strategy meeting established the deployment framework:
 |------|-----|-------|
 | Developer | Ahmed Mohamed Sabri | Solo developer, built entire platform over 44 sessions |
 | IT Department | Company IT team | Manages infrastructure, SSH access, network security |
-| Chairman | EPROM Chairman | Key stakeholder, EGYPS demo audience |
+| Chairman | Eng. Hossam Asaad | Key stakeholder, EGYPES demo audience |
 | Friend/Colleague | Amr Abu Mady | Contributed ML Feature Optimizer upstream repo |
 
 ---

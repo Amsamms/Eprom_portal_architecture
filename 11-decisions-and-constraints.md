@@ -80,9 +80,9 @@ This limits the portal to being a relatively lightweight web application. Heavy 
 
 ---
 
-## EGYPS Exhibition Risk
+## EGYPES Exhibition Risk
 
-The EGYPS exhibition presents a specific connectivity risk:
+The EGYPES (Egypt Energy Show, 30 March – 1 April 2026) exhibition presents a specific connectivity risk:
 - **Signal jamming** at the conference center during high-ranking official visits
 - **Signal saturation** from thousands of attendees using mobile data
 - The demonstration may fail due to local internet suppression, regardless of server-side bandwidth

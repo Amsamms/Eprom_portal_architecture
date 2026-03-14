@@ -63,7 +63,7 @@
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| EGYPS Exhibition Demo | Pending | Requires stable prototype with heater + soft sensors + carbon footprint |
+| EGYPES Exhibition Demo | Pending | Requires stable prototype with heater + soft sensors + carbon footprint (30 March – 1 April 2026) |
 | Domain `ese.eprom.com.eg` Live | Pending | Blocked on DNS coordination with Telecom Egypt + SSL setup on company VM |
 | Pre-Production Security Audit | Pending | Must complete before domain goes live |
 | Company VM Migration | Complete | 16/16 verification checks passed, all 6 containers running |
