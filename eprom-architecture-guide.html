@@ -319,7 +319,7 @@
 <body>
 
 <h1>EPROM Portal</h1>
-<p class="subtitle">Architecture Guide — Meeting Reference<br>Last updated: March 4, 2026</p>
+<p class="subtitle">Architecture Guide — Meeting Reference<br>Last updated: March 14, 2026</p>
 
 <!-- NAV -->
 <nav class="nav-dots">
@@ -339,7 +339,7 @@
 
 <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">
   Think of the VM as a <strong style="color:var(--text)">factory building</strong>.
-  Inside it, 5 independent workers (containers) each do one job.
+  Inside it, 6 independent workers (containers) each do one job.
 </p>
 
 <div class="diagram"><span class="hl">THE INTERNET</span> (your browser)
@@ -357,6 +357,7 @@
 |       +--&gt; <span class="hl2">Heater</span>   (heater calc room)     |
 |       +--&gt; <span class="hlg">Pump</span>     (pump calc room)       |
 |       +--&gt; <span class="hlo">MassMole</span> (chemistry lab)        |
+|       +--&gt; <span class="hl2">Optimizer</span>(ML optimization room)  |
 |       |                                      |
 |       |    +----------+                      |
 |       +--&gt; | <span class="hly">Database</span> | (the filing cabinet) |
@@ -367,7 +368,7 @@
 
 <!-- ========== SECTION: WORKERS ========== -->
 <section id="workers">
-<h2><span class="icon">&#128230;</span> The 5 Workers (Docker Containers)</h2>
+<h2><span class="icon">&#128230;</span> The 6 Workers (Docker Containers)</h2>
 
 <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">
   <strong style="color:var(--text)">Docker</strong> = each worker gets their own sealed toolbox.
@@ -453,6 +454,22 @@
   <p style="font-size:0.82rem;color:var(--muted)">
     Mass/mole converter with <strong style="color:var(--text)">160 chemical compounds</strong> database + stream properties.
     <br>Has AI chat. Python analogy: another FastAPI app.
+  </p>
+</div>
+
+<!-- Optimizer -->
+<div class="card">
+  <div class="card-header">
+    <strong>eprom_optimizer</strong>
+    <span class="badge badge-purple">Port 3007</span>
+  </div>
+  <div class="tag-row">
+    <span class="tag" style="background:rgba(129,140,248,0.12);color:var(--accent2)">Express.js + PHP</span>
+    <span class="tag" style="background:rgba(74,222,128,0.12);color:var(--green)">Claude AI</span>
+  </div>
+  <p style="font-size:0.82rem;color:var(--muted)">
+    ML feature importance + parameter optimization. <strong style="color:var(--text)">Hybrid Node.js + PHP</strong> architecture.
+    <br>Node.js handles auth & AI chat; PHP/Apache handles data science (Pearson correlation, random search optimization).
   </p>
 </div>
 </section>
@@ -743,6 +760,11 @@
         <td style="font-family:monospace">3006</td>
       </tr>
       <tr>
+        <td>Feature Optimizer</td>
+        <td><span class="badge badge-green">Live</span></td>
+        <td style="font-family:monospace">3007</td>
+      </tr>
+      <tr>
         <td>Carbon Footprint</td>
         <td><span class="badge badge-yellow">Planned</span></td>
         <td style="font-family:monospace;color:var(--muted)">3002</td>
@@ -777,7 +799,7 @@
       <tr><td style="color:var(--green)">Pump App</td><td style="color:var(--green)">FastAPI (Python 3.11)</td></tr>
       <tr><td style="color:var(--muted)">Database</td><td>PostgreSQL 16</td></tr>
       <tr><td style="color:var(--muted)">Auth</td><td>JWT + bcrypt</td></tr>
-      <tr><td style="color:var(--muted)">AI</td><td>Claude 3.5 Sonnet (in each calc app)</td></tr>
+      <tr><td style="color:var(--muted)">AI</td><td>Claude Haiku 4.5 (default, in each calc app)</td></tr>
       <tr><td style="color:var(--muted)">Containers</td><td>Docker + Docker Compose</td></tr>
       <tr><td style="color:var(--muted)">Hosting</td><td>AWS EC2 (Frankfurt)</td></tr>
       <tr><td style="color:var(--muted)">Domain</td><td>eprom-portal.xyz (Namecheap)</td></tr>
@@ -797,7 +819,7 @@
   </div>
   <div class="qa-item">
     <div class="qa-q">"How many apps?"</div>
-    <div class="qa-a">3 live (heater, pump, massmole), 3 planned (carbon, sensors, leak detection).</div>
+    <div class="qa-a">4 live (heater, pump, massmole, optimizer), 3 planned (carbon, sensors, leak detection).</div>
   </div>
   <div class="qa-item">
     <div class="qa-q">"How's security?"</div>
@@ -1215,7 +1237,7 @@
 |   |   +-- <span class="file">upload-data.php</span>         <span class="comment">POST &mdash; upload CSV data file</span>
 |   |   +-- <span class="file">set-target.php</span>          <span class="comment">POST &mdash; choose target column</span>
 |   |   +-- <span class="file">run-preprocessing.php</span>   <span class="comment">POST &mdash; clean &amp; preprocess data</span>
-|   |   +-- <span class="file">run-importance.php</span>      <span class="comment">POST &mdash; SHAP / Random Forest importance</span>
+|   |   +-- <span class="file">run-importance.php</span>      <span class="comment">POST &mdash; Pearson correlation importance</span>
 |   |   +-- <span class="file">run-optimization.php</span>    <span class="comment">POST &mdash; optimize parameters</span>
 |   |   +-- <span class="file">get-results.php</span>         <span class="comment">GET &mdash; retrieve optimization results</span>
 |   |   +-- <span class="file">get-session-state.php</span>   <span class="comment">GET &mdash; current session state</span>
@@ -1248,7 +1270,7 @@
 
 <div class="qa-item">
   <div class="qa-q">What's the data pipeline?</div>
-  <div class="qa-a">Upload CSV &rarr; Preprocess (clean data) &rarr; Set Target Column &rarr; Run Feature Importance (SHAP/Random Forest) &rarr; Run Optimization (find optimal parameter values). Each step builds on the previous one.</div>
+  <div class="qa-a">Upload CSV &rarr; Preprocess (clean data) &rarr; Set Target Column &rarr; Run Feature Importance (Pearson correlation + elbow detection) &rarr; Run Optimization (random search, 10K iterations). Each step builds on the previous one.</div>
 </div>
 </div>
 </div>
@@ -1424,7 +1446,7 @@
 </div>
 
 <div class="highlight-box" style="margin-top:10px;">
-  <strong>Total:</strong> 13 tables. All queries use parameterized SQL (<code style="color:var(--accent)">$1, $2</code>) &mdash; no SQL injection possible.
+  <strong>Total:</strong> 14 tables. All queries use parameterized SQL (<code style="color:var(--accent)">$1, $2</code>) &mdash; no SQL injection possible.
   JSONB columns store full input/output snapshots for forensic analysis.
 </div>
 </div>
