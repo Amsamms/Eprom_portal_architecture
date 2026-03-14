@@ -106,7 +106,7 @@ This financial friction directly impacts the AI credits system design — the sy
 
 ## Design Constraints (Technical)
 
-These constraints emerged from 44 sessions of development and should not be violated:
+These constraints emerged from 45 sessions of development and should not be violated:
 
 1. **Server-side computation only** — All formulas, AI logic, and engineering calculations must run on the server. Zero business logic in browser JavaScript. This is non-negotiable for IP protection.
 

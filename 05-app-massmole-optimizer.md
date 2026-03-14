@@ -53,7 +53,7 @@ Alkanes, Alkenes, Alkynes, Aromatics, Alcohols, Acids, Aldehydes, Ketones, Ether
 | `search_compound` | Search compounds by name, formula, or CAS number |
 | `get_compound_details` | Get full details for a specific compound |
 | `fill_composition` | Fill compound percentages in the form |
-| `run_calculation` | Execute mole/mass conversion + stream properties |
+| `trigger_calculate` | Execute mole/mass conversion + stream properties |
 | `load_preset` | Load one of 5 preset compositions |
 | `clear_composition` | Clear all entered compounds |
 | `switch_basis` | Toggle between mole% and mass% input basis |

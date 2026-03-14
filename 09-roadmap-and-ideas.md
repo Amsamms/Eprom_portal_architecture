@@ -34,17 +34,17 @@
 | **Arabic Language Support** | Arabic RTL interface — UI labels, buttons, navigation. The AI already responds in Arabic when asked. |
 | **User Onboarding Tour** | 4-step guided tour for first-time users per app. Reduces support questions. |
 | **Comparison Mode** | Side-by-side comparison of 2–3 saved scenarios with highlighted differences. |
-| **Admin Analytics Dashboard** | Visualize app usage, peak hours, AI token usage, and error types from existing activity_logs data. |
 | **AI Chat Export** | Export AI chat conversation as PDF or Markdown for project documentation. |
 | **Webhook/Email Notifications** | Email alerts for threshold breaches, new signups, etc. |
 | **PWA (Progressive Web App)** | Add manifest + service worker for "install to home screen" and offline caching. |
 
 ---
 
-## Implemented Features (Sessions 27–44)
+## Implemented Features (Sessions 27–45)
 
 | Feature | Session | Summary |
 |---------|---------|---------|
+| **Admin Analytics Dashboard** | 45 | Full overhaul: global admin stats (Total Users, Active Sessions, Total Logins, Total Activity), session lifecycle tracking (soft-delete with `ended_at` + `end_reason`), user journey timeline, admin-only activity log with User column + dynamic filters (user/app/action/date), clickable session links, Top Active Users table. |
 | **AI Token Optimization** | 44 | Two strategies: `cleanForClaude()` trims tool output before sending, `summarizeOldToolResults()` compresses history. Heaviest pump conversation: 92K → 13K tokens (86% reduction). All 4 apps. Quality improved. |
 | **System Prompt Regression Audit** | 42 | Reverted session 32's damaging "brief summary" rule in all 4 system prompts. Restored original Important Rules, multi-case examples, and error recovery instructions. |
 | **Clear Chat Button** | 41 | Trash-icon button in chat panel header. Clears DOM, removes localStorage history, resets conversationId. All 4 apps. |

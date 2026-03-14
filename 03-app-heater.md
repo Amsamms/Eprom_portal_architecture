@@ -70,7 +70,7 @@ The AI (Claude Haiku by default) has access to 7 server-side tools:
 |------|-------------|
 | `fill_inputs` | Fills one or more input fields with values (triggers visual cursor animation) |
 | `trigger_calculate` | Clicks the Calculate button to run all 406 formulas |
-| `get_current_results` | Reads current calculation results by section (kpis, fuel_data, performance, all) |
+| `get_current_results` | Reads current calculation results by section (kpis, fuel_data, performance, energy_balance, all) |
 | `get_current_inputs` | Reads all 43 current input field values by section |
 | `load_scenario` | Loads one of 7 predefined scenario presets (with optional auto-calculate) |
 | `scroll_to_section` | Scrolls the page to a specific UI section (kpi-section, charts-section, etc.) |
@@ -78,7 +78,7 @@ The AI (Claude Haiku by default) has access to 7 server-side tools:
 
 ### Visual Actions
 
-When the AI calls `fill_input_fields`, the frontend plays an animated cursor that:
+When the AI calls `fill_inputs`, the frontend plays an animated cursor that:
 1. Moves to the target input field
 2. Highlights the field
 3. Types the new value character by character

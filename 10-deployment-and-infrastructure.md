@@ -36,7 +36,7 @@
 | **Firewall** | UFW: ports 22, 80, 443 |
 | **Resource limits** | docker-compose.override.yml: 19 GB RAM / 8 CPU allocated to containers |
 | **Backups** | Daily cron at 2 AM, 7-day retention (~20 MB each) |
-| **Reports** | 370 MB static HTML in /opt/eprom/reports/ (27 reports) |
+| **Reports** | 370 MB static HTML in /opt/eprom/reports/ (25 reports) |
 | **Nginx** | 1.24.0, proxying all 5 apps + serving static reports |
 
 ---

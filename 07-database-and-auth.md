@@ -10,7 +10,7 @@ Runs as `eprom_db` container (postgres:16-alpine) on the internal Docker network
 
 ---
 
-## Table Overview (14 Tables)
+## Table Overview (15 Tables)
 
 ### Core Tables
 
@@ -19,8 +19,8 @@ Runs as `eprom_db` container (postgres:16-alpine) on the internal Docker network
 | `users` | User accounts | `id`, `email` (unique), `full_name`, `password_hash`, `role` (viewer/admin), `is_active`, `email_verified`, `verification_token`, `company_name`, `department`, `job_title`, `years_of_experience`, `user_number` (USR-XXXX, auto-generated) |
 | `apps` | Registered applications | `id`, `name` (unique), `display_name`, `description`, `url_slug`, `icon`, `port`, `is_active`. Seeded with 7 apps: heater, pump, massmole, carbon, sensors, leak, optimizer |
 | `user_app_permissions` | Per-user app access | `user_id`, `app_name`, `can_access`, `granted_by`, `granted_at`. Has UNIQUE constraint on `(user_id, app_name)` |
-| `sessions` | Active login sessions | `user_id`, `token_hash` (unique), `expires_at`, `ip_address`, `user_agent`. Used for DB-level session validation |
-| `activity_logs` | General activity tracking | `user_id`, `app_name`, `action`, `input_summary`, `result_summary`, `duration_ms`. Tracks logins, logouts, app opens, report clicks |
+| `sessions` | Login sessions (active + ended) | `user_id`, `token_hash` (unique), `expires_at`, `ended_at`, `end_reason`, `ip_address`, `user_agent`. Sessions are soft-deleted on logout (preserved with `ended_at` + `end_reason` instead of hard-deleted). Used for DB-level session validation and user journey tracking. |
+| `activity_logs` | General activity tracking | `user_id`, `app_name`, `action`, `input_summary`, `result_summary`, `duration_ms`, `session_id` (FK to sessions). Tracks logins, logouts, app opens, report clicks. Activities linked to sessions via `session_id` for timeline reconstruction. |
 
 ### Per-App Calculation Logs
 

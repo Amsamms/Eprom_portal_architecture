@@ -645,7 +645,7 @@
       </tr>
       <tr>
         <td style="color:var(--accent);white-space:nowrap">sessions</td>
-        <td>Active logins — who's logged in, from where, when it expires</td>
+        <td>Login sessions — soft-deleted on logout (kept with ended_at + end_reason for user journey tracking)</td>
       </tr>
       <tr>
         <td style="color:var(--accent);white-space:nowrap">apps</td>
@@ -657,7 +657,7 @@
       </tr>
       <tr>
         <td style="color:var(--accent);white-space:nowrap">activity_logs</td>
-        <td>Audit trail — who did what, when</td>
+        <td>Audit trail — who did what, when. Linked to sessions via session_id for timeline reconstruction</td>
       </tr>
     </tbody>
   </table>
@@ -940,7 +940,8 @@
 |   |   +-- <span class="file">layout.js</span>                <span class="comment">Sidebar + chat wrapper for all dashboard pages</span>
 |   |   +-- <span class="file">page.js</span>                  <span class="comment">Main dashboard &mdash; KPI cards, app cards</span>
 |   |   +-- <span class="file">admin/page.js</span>            <span class="comment">Admin panel &mdash; manage users, plans, subscriptions</span>
-|   |   +-- <span class="file">activity/page.js</span>         <span class="comment">Activity log viewer (who did what, when)</span>
+|   |   +-- <span class="file">activity/page.js</span>         <span class="comment">Activity log viewer (admin: all users, dynamic filters)</span>
+|   |   +-- <span class="file">activity/session/[id]/page.js</span> <span class="comment">Session detail timeline (user journey)</span>
 |   |   +-- <span class="file">reports/page.js</span>          <span class="comment">Reports listing page</span>
 |   |   +-- <span class="file">report-viewer/page.js</span>    <span class="comment">Static report viewer (370 MB of HTML reports)</span>
 |   |   +-- <span class="file">heater-logs/page.js</span>      <span class="comment">Calculation log viewer per app</span>

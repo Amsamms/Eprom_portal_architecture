@@ -69,7 +69,7 @@ const chat = new ChatBase({
 
 ## Visual Actions: `visual-actions-base.js`
 
-The visual actions library provides animated cursor interactions — when the AI calls a `fill_input_fields` tool, the frontend shows:
+The visual actions library provides animated cursor interactions — when the AI calls a `fill_inputs` tool, the frontend shows:
 
 1. A floating cursor appears
 2. Cursor moves smoothly to the target input field
@@ -219,5 +219,5 @@ Chat conversations are stored in two places:
 |-----|-------|---------------|---------------|
 | Heater | 7 (fill_inputs, trigger_calculate, get_current_results, get_current_inputs, load_scenario, scroll_to_section, show_insight) | Yes (cursor fills form fields) | Haiku |
 | Pump | 6 (fill_inputs, trigger_calculate, get_current_results, get_current_inputs, show_insight, display_results) | Yes (with before/after hooks) | Haiku |
-| MassMole | 8 (search_compound, get_compound_details, fill_composition, run_calculation, load_preset, clear_composition, switch_basis, show_insight) | No (uses action callbacks) | Haiku |
+| MassMole | 8 (search_compound, get_compound_details, fill_composition, trigger_calculate, load_preset, clear_composition, switch_basis, show_insight) | No (uses action callbacks) | Haiku |
 | Optimizer | 8 (upload_data, set_target_column, run_preprocessing, calculate_importance, run_optimization, get_results, get_data_summary, show_insight) | No (routes to PHP API) | Haiku |
