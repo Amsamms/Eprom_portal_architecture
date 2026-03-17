@@ -1,6 +1,6 @@
 # Deployment & Infrastructure
 
-**Last Generated:** 2026-03-14
+**Last Generated:** 2026-03-17
 
 ---
 
@@ -37,7 +37,8 @@
 | **Resource limits** | docker-compose.override.yml: 19 GB RAM / 8 CPU allocated to containers |
 | **Backups** | Daily cron at 2 AM, 7-day retention (~20 MB each) |
 | **Reports** | 370 MB static HTML in /opt/eprom/reports/ (25 reports) |
-| **Nginx** | 1.24.0, proxying all 5 apps + serving static reports |
+| **Nginx** | 1.24.0, proxying all 5 apps + iframe proxies + serving static reports |
+| **Testing** | 130/130 Playwright tests passed (Session 46) |
 
 ---
 
@@ -88,6 +89,8 @@ Replace `portal/src/` with the appropriate app directory:
 
 ### Step 2: Build + Restart
 
+**Important:** Always use `--build` flag to avoid Docker caching stale images (learned in Session 52).
+
 ```bash
 # On EC2:
 ssh -i ~/eprom-aws-key.pem ubuntu@18.198.1.231 \
@@ -116,9 +119,34 @@ curl http://localhost:3000/api/health
 |------|-----|
 | `.env` | Different passwords, URLs, SMTP credentials per environment |
 | `docker-compose.override.yml` | Only exists on company VM (resource limits) |
-| Nginx site config | Different server_name, SSL configuration |
+| Nginx site config | Different server_name, SSL configuration, proxy paths |
 | `/opt/eprom/backups/` | Local to each VM |
 | `/opt/eprom/reports/` | 370 MB static HTML, local to each VM |
+
+---
+
+## Nginx Configuration
+
+Nginx runs as a system service (not in Docker). It handles:
+- TLS termination
+- Reverse proxying to all 5 app containers
+- Iframe proxy paths (`/_proxy/heater/`, `/_proxy/pump/`, etc.) for embedded app access
+- Static file serving for reports
+- Security header injection
+- Proxy buffer sizing (128k buffer, 256k busy)
+
+On EC2, two Nginx configs exist:
+- `eprom-portal` — domain-based (HTTPS, eprom-portal.xyz)
+- `eprom-ip` — IP-based fallback (HTTP, 18.198.1.231)
+
+### Proxy Path Architecture
+
+| Path Type | Example | Purpose |
+|-----------|---------|---------|
+| `/apps/*` | `/apps/heater/` | Direct app access (full app with its own nav) |
+| `/_proxy/*` | `/_proxy/heater/` | Iframe embedding (app loads inside portal with sidebar) |
+
+Both path types proxy to the same container ports. The `/_proxy/` paths were added in Session 48 for iframe integration.
 
 ---
 
@@ -130,21 +158,6 @@ curl http://localhost:3000/api/health
 | `ese.eprom.com.eg` | Company VM (pending) | DNS coordination with Telecom Egypt (WE) required |
 
 The Let's Encrypt certificate on EC2 is valid until May 22, 2026 and auto-renews via Certbot. The company VM will need either a company-provided SSL certificate or a new Let's Encrypt setup once the domain is pointed.
-
----
-
-## Nginx Configuration
-
-Nginx runs as a system service (not in Docker). It handles:
-- TLS termination
-- Reverse proxying to all 5 app containers
-- Static file serving for reports
-- Security header injection
-- Proxy buffer sizing (128k buffer, 256k busy)
-
-On EC2, two Nginx configs exist:
-- `eprom-portal` — domain-based (HTTPS, eprom-portal.xyz)
-- `eprom-ip` — IP-based fallback (HTTP, 18.198.1.231)
 
 ---
 

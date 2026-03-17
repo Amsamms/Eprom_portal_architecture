@@ -1,6 +1,6 @@
 # App: Pump Efficiency Calculator
 
-**Last Generated:** 2026-03-14
+**Last Generated:** 2026-03-17
 
 ---
 
@@ -11,7 +11,7 @@ The Pump Efficiency Calculator analyzes centrifugal pump performance using **53 
 **URL:** https://eprom-portal.xyz/apps/pump/
 **Container:** `eprom_pump` (~150 MB RAM with numpy/scipy)
 **Technology:** Python 3.11 + FastAPI + uvicorn
-**Port:** 3005 (behind Nginx at `/apps/pump/`)
+**Port:** 3005 (behind Nginx at `/apps/pump/` or `/_proxy/pump/`)
 
 ---
 
@@ -97,6 +97,15 @@ Charts are generated as Plotly JSON on the server and rendered client-side using
 ### Visual Actions
 
 The pump app has full visual action support (animated cursor filling fields), with custom `beforeFillFields` and `afterFillFields` hooks in the visual-actions config for pump-specific behavior (e.g., updating curve data tables before calculation).
+
+---
+
+## Iframe Mode
+
+When loaded inside the portal iframe (via `/_proxy/pump/`):
+- **Hides:** `.pump-navbar`
+- **Creates:** Custom `#iframe-ai-btn` floating button (white background with two-drops SVG)
+- Chat FAB uses standardized two-drops icon
 
 ---
 

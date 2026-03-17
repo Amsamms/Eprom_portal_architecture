@@ -1,17 +1,17 @@
 # App: Heater Efficiency Calculator
 
-**Last Generated:** 2026-03-14
+**Last Generated:** 2026-03-17
 
 ---
 
 ## Overview
 
-The Heater Efficiency Calculator evaluates fired heater thermal performance using **406 engineering formulas** running server-side. It takes **43 inputs** organized across **5 sections** and produces comprehensive efficiency analysis with KPIs, charts, and detailed output tables.
+The Heater Efficiency Calculator evaluates fired heater thermal performance using **406 engineering formulas** running server-side. It takes **43 inputs** organized across **5 sections** and produces comprehensive efficiency analysis with KPIs, charts, detailed output tables, and a professional SVG process schematic.
 
 **URL:** https://eprom-portal.xyz/apps/heater/
 **Container:** `eprom_heater` (~20 MB RAM)
 **Technology:** Express.js (Node 20 Alpine)
-**Port:** 3001 (behind Nginx at `/apps/heater/`)
+**Port:** 3001 (behind Nginx at `/apps/heater/` or `/_proxy/heater/`)
 
 ---
 
@@ -50,7 +50,36 @@ The engine is the core intellectual property — it runs entirely server-side an
 
 ### 5 Input Sections
 
-The 43 inputs are organized into 5 sections covering fuel composition, ambient conditions, heater geometry, operating parameters, and process fluid properties. Default values and metadata (labels, units, ranges, tooltips) are served via the `/api/defaults` endpoint.
+The 43 inputs are organized into 5 sections: fuel composition, ambient conditions, heater geometry, operating parameters, and **Design Data** (4 fields: design thermal efficiency, design fuel efficiency, design excess air, design GHG rate — user-configurable, defaults match previous hardcoded behavior). Default values and metadata (labels, units, ranges, tooltips) are served via the `/api/defaults` endpoint.
+
+---
+
+## Process Schematic (Session 53)
+
+After calculation, a professional **SVG process schematic** appears above the KPI cards and charts. It depicts the fired heater anatomy with 8 KPI annotations:
+
+### Heater Anatomy (SVG)
+- **Stack** (top) — with Stack Temperature and Flue Gas Flow annotations
+- **Convection Section** (upper) — with tube bank visualization
+- **Radiant Section** (middle) — with process tubes and animated flames
+- **Burners** (bottom) — with fuel input arrow
+
+### 8 KPI Annotations
+White badge overlays with connecting dashed lines to process-correct locations:
+- Stack area: Stack Temp, Flue Gas Flow
+- Firebox area: Thermal Eff., Fuel Eff.
+- Combustion area: Excess Air, GHG Rate
+- Output area: Absorbed Duty, Radiant/Conv split
+
+### Animations
+- **Count-up values:** requestAnimationFrame with ease-out cubic easing (1.2s duration)
+- **Flow arrows:** Animated dashed lines for fuel input, flue gas flow, and process fluid path
+- **Responsive:** 3 breakpoints (desktop, 768px, 480px) with font/layout scaling
+
+### Design Data Pipeline
+- Frontend sends `designInputs` alongside calculation `inputs` in POST body
+- Route extracts design inputs and injects into `results.designValues` and `results.charts.performance`
+- Charts read from `gatherDesignInputs()` function instead of hardcoded values
 
 ---
 
@@ -92,6 +121,15 @@ Clicking the EPROM logo 10 times reveals a dropdown to switch between Claude Hai
 
 ---
 
+## Iframe Mode
+
+When loaded inside the portal iframe (via `/_proxy/heater/`), the app detects embedding and:
+- **Hides:** `.sidebar-wrapper`, `.top-header`, `.page-breadcrumb`
+- **Keeps visible:** `.chat-fab` (with `display: flex !important` when chat is not open)
+- **Action bar:** Calculate and Load Defaults buttons are in the main content area (moved from breadcrumb bar in Session 49)
+
+---
+
 ## API Endpoints
 
 | Endpoint | Method | Auth | Rate Limit | Description |
@@ -123,7 +161,7 @@ The heater frontend is a **vanilla JavaScript SPA** (no framework). Key files:
 |------|---------|
 | `public/index.html` | Entry point with `<base href="/apps/heater/">` |
 | `public/js/app.js` | Thin orchestrator — API calls only, no calculations |
-| `public/js/ui-manager.js` | Form generation from metadata, chart rendering, KPI display |
+| `public/js/ui-manager.js` | Form generation from metadata, chart rendering, KPI display, SVG schematic |
 | `public/js/chat-base.js` | Shared chatbot library (copy from `shared/`) |
 | `public/js/chat-config.js` | Heater-specific ChatBase configuration |
 | `public/js/visual-actions-base.js` | Shared cursor animation library |

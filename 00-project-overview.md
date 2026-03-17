@@ -1,6 +1,6 @@
 # EPROM Portal — Project Overview
 
-**Last Generated:** 2026-03-14
+**Last Generated:** 2026-03-17
 
 ---
 
@@ -26,7 +26,7 @@ Beyond internal use, the project serves three strategic goals:
 
 ## What is the EPROM Portal?
 
-The EPROM Portal is a secure, mobile-first web platform that gives authorized employees and stakeholders access to multiple engineering and data applications through a unified interface. It was built as a solo project by Ahmed Mohamed Sabri (Process Engineer / Developer) over 45 development sessions.
+The EPROM Portal is a secure, mobile-first web platform that gives authorized employees and stakeholders access to multiple engineering and data applications through a unified interface. It was built as a solo project by Ahmed Mohamed Sabri (Process Engineer / Developer) over 53 development sessions.
 
 The portal's core innovation is the integration of "Process Knowledge" (20+ years of operational experience) with "System Knowledge" (AI/ML capabilities). The resulting tools achieve 97–98% accuracy for predictive calculations. Even if the source code were compromised, the underlying expert assumptions — derived from decades of EPROM operational data — remain a proprietary barrier to entry.
 
@@ -34,17 +34,42 @@ The portal's core innovation is the integration of "Process Knowledge" (20+ year
 
 ---
 
-## The Five Apps
+## The Five Live Apps
 
 | App | What It Does | Tech |
 |-----|-------------|------|
-| **Heater Efficiency Calculator** | Evaluates fired heater thermal performance using 406 engineering formulas across 43 inputs. Produces KPIs like thermal efficiency, fuel efficiency, excess air %, and GHG emission rate. | Express.js, ApexCharts |
+| **Heater Efficiency Calculator** | Evaluates fired heater thermal performance using 406 engineering formulas across 43 inputs. Produces KPIs like thermal efficiency, fuel efficiency, excess air %, and GHG emission rate. Includes a professional SVG process schematic with animated KPI annotations. | Express.js, ApexCharts |
 | **Pump Efficiency Calculator** | Analyzes centrifugal pump performance with 53 formulas covering curve fitting, system curves, NPSH, affinity laws, and BEP. Generates 5 interactive Plotly charts. | Python 3.11, FastAPI, SciPy |
 | **Mass Mole Converter** | Converts between mole% and mass% for 160 chemical compounds across 15 categories. Calculates stream properties (avg molecular weight, LHV). Includes 5 industry presets. | Express.js |
-| **Feature Optimizer** | ML-based feature importance analysis and parameter optimization using correlation analysis and genetic algorithms. Upload CSV → preprocess → analyze → optimize. | Express.js + PHP hybrid |
+| **Feature Optimizer** | ML-based feature importance analysis and parameter optimization. Upload CSV or paste from Excel → preprocess → analyze → optimize. Includes one-click analysis and feature response charts. | Express.js + PHP hybrid, Chart.js |
 | **Interactive Reports** | Library of 25 petroleum industry reports (370 MB of static HTML) served via Nginx. Searchable, filterable by 5 categories. | Static HTML, Nginx |
 
-Every calculation app includes an **AI Chat Assistant** ("EPROM AI Companion") powered by Anthropic Claude. The AI can fill input forms, run calculations, load scenarios, and provide engineering analysis — all through natural language conversation with tool-use capabilities.
+### Coming Soon (12 apps)
+
+The dashboard shows 12 additional apps across 7 pillars, currently marked as "Coming Soon":
+
+| Pillar | Coming Soon Apps |
+|--------|-----------------|
+| **AI Equipment Performance** | Turbine Analyzer, Boiler Monitor, Cooling Tower, Distillation Tower, Air Cooler, Separators, Compressors, Heat Exchanger |
+| **Process Smart Tools** | Unit Converter, Fluid Properties, Pipe Sizer, Relief Valve Sizing |
+
+Every calculation app includes an **AI Chat Assistant** ("EPROM AI Companion") powered by Anthropic Claude. The AI can fill input forms, run calculations, load scenarios, and provide engineering analysis — all through natural language conversation with tool-use capabilities. A separate Dashboard AI Companion helps users navigate the portal and understand the available tools.
+
+---
+
+## The 7 Pillars
+
+The dashboard organizes all apps into 7 strategic pillars:
+
+| Pillar | Apps |
+|--------|------|
+| **AI Equipment Performance** | Heater (live), + 8 coming soon |
+| **Process Smart Tools** | Pump (live), MassMole (live), + 4 coming soon |
+| **Virtual Sensors** | Quality Analyzer (coming soon) |
+| **Optimization Engine** | Feature Optimizer (live) |
+| **Smart Sustainability** | Carbon Footprint (coming soon) |
+| **Safety Intelligence** | Leak Detection (coming soon) |
+| **Knowledge Hub** | Interactive Reports (live) |
 
 ---
 
@@ -76,18 +101,24 @@ A formal IT strategy meeting established the deployment framework:
 
 | Role | Who | Notes |
 |------|-----|-------|
-| Developer | Ahmed Mohamed Sabri | Solo developer, built entire platform over 45 sessions |
+| Developer | Ahmed Mohamed Sabri | Solo developer, built entire platform over 53 sessions |
 | IT Department | Company IT team | Manages infrastructure, SSH access, network security |
 | Chairman | Eng. Hossam Asaad | Key stakeholder, EGYPES demo audience |
 | Friend/Colleague | Amr Abu Mady | Contributed ML Feature Optimizer upstream repo |
 
 ---
 
-## Current State (as of Session 45)
+## Current State (as of Session 53)
 
-- **4 calculation apps** live and tested on staging (heater, pump, massmole, optimizer)
-- **Admin dashboard overhaul** complete — global stats, session lifecycle tracking, user journey timeline, admin-only activity log with dynamic filters
+- **4 calculation apps** live and tested on staging and production (heater, pump, massmole, optimizer)
+- **12 coming-soon apps** displayed on dashboard across 7 pillars
+- **Heater process schematic** — professional SVG with 8 animated KPI annotations
+- **Optimizer V2** — one-click analysis, paste from Excel, feature response charts
+- **5 unified AI chatbots** — consistent icons (two-drops SVG), white headers, mobile bottom sheets, onboarding tips
+- **7-pillar dashboard** with collapsible sections and universal sidebar
+- **Iframe app integration** — apps load inside portal with consistent navigation
+- **Admin dashboard overhaul** complete — global stats, session lifecycle tracking, user journey timeline
 - **AI token optimization** achieving 63–86% cost reduction across all apps
-- **Company VM migration** complete (192.168.50.202, 8 CPU / 24 GB RAM)
+- **Company VM migration** complete (192.168.50.202, 8 CPU / 24 GB RAM), 130/130 Playwright tests passed
 - **Pre-production security audit** pending before domain goes live
 - **SSL and domain** active on staging (eprom-portal.xyz), pending on production (ese.eprom.com.eg)

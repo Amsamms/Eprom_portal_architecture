@@ -1,6 +1,6 @@
 # Architecture Overview
 
-**Last Generated:** 2026-03-14
+**Last Generated:** 2026-03-17
 
 ---
 
@@ -19,6 +19,7 @@
 │  - Reverse proxy to Docker containers                    │
 │  - Security headers (HSTS, X-Frame-Options, etc.)        │
 │  - Static report serving (/reports/)                     │
+│  - Iframe proxy paths (/_proxy/*)                        │
 └──────────────┬───────────────────────────────────────────┘
                │ HTTP (internal, 127.0.0.1 only)
                ▼
@@ -54,7 +55,7 @@
 | Container | Port | Technology | Role |
 |-----------|------|-----------|------|
 | `eprom_db` | 5432 | PostgreSQL 16 (Alpine) | Shared database for all services |
-| `eprom_portal` | 3000 | Next.js 14.2.5 (App Router) | Auth, dashboard, admin panel, API gateway |
+| `eprom_portal` | 3000 | Next.js 14.2.5 (App Router) | Auth, dashboard, admin panel, API gateway, Dashboard AI Companion |
 | `eprom_heater` | 3001 | Express.js (Node 20) | Fired heater calculations (406 formulas) |
 | `eprom_pump` | 3005 | FastAPI (Python 3.11) | Pump efficiency calculations (53 formulas) |
 | `eprom_massmole` | 3006 | Express.js (Node 20) | Mass/mole conversion (160 compounds) |
@@ -69,13 +70,23 @@ All application containers bind to `127.0.0.1` only — they are not directly ac
 | URL Path | Proxied To | Notes |
 |----------|-----------|-------|
 | `/` | `http://127.0.0.1:3000` | Portal (catch-all) |
-| `/apps/heater/` | `http://127.0.0.1:3001/` | Heater app |
-| `/apps/pump/` | `http://127.0.0.1:3005/` | Pump app |
-| `/apps/massmole/` | `http://127.0.0.1:3006/` | MassMole app |
+| `/apps/heater/` | `http://127.0.0.1:3001/` | Heater app (direct access) |
+| `/apps/pump/` | `http://127.0.0.1:3005/` | Pump app (direct access) |
+| `/apps/massmole/` | `http://127.0.0.1:3006/` | MassMole app (direct access) |
 | `/apps/optimizer/` | `http://127.0.0.1:3007/` | Optimizer (20M upload limit) |
+| `/_proxy/heater/` | `http://127.0.0.1:3001/` | Heater via iframe (portal sidebar visible) |
+| `/_proxy/pump/` | `http://127.0.0.1:3005/` | Pump via iframe |
+| `/_proxy/massmole/` | `http://127.0.0.1:3006/` | MassMole via iframe |
+| `/_proxy/optimizer/` | `http://127.0.0.1:3007/` | Optimizer via iframe |
 | `/reports/` | Filesystem | Static HTML reports (Nginx direct) |
 
 Security headers applied globally: `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`. The `X-Powered-By` header is stripped.
+
+### Iframe Integration Pattern
+
+Apps can be accessed two ways:
+1. **Direct:** `/apps/heater/` — full standalone app with its own header/navigation
+2. **Iframe:** `/view/heater` — Next.js page wraps the app in an iframe via `/_proxy/heater/`, adding the portal sidebar. The app detects iframe embedding and hides its own navigation (header, breadcrumbs) while keeping the AI chat FAB visible.
 
 ---
 
@@ -94,6 +105,7 @@ Security headers applied globally: `X-Frame-Options: SAMEORIGIN`, `X-Content-Typ
 | **SSL** | Let's Encrypt (auto-renew) | Pending |
 | **Resource limits** | None (small VM) | docker-compose.override.yml (19 GB / 8 CPU) |
 | **Backups** | Manual | Daily cron at 2 AM, 7-day retention |
+| **Playwright tests** | Ongoing | 130/130 passed (Session 46) |
 
 ---
 
@@ -103,14 +115,15 @@ Security headers applied globally: `X-Frame-Options: SAMEORIGIN`, `X-Content-Typ
 |-------|-----------|--------------|
 | Portal Frontend | Next.js | 14.2.5, App Router, Tailwind CSS |
 | App Frontends | Vanilla JS | Thin clients, no framework, Bootstrap 5 |
-| Charts | ApexCharts (Heater), Plotly (Pump), Recharts (Portal) | |
+| Charts | ApexCharts (Heater), Plotly (Pump), Chart.js (Optimizer), Recharts (Portal) | |
 | Authentication | JWT + httpOnly cookies | jose (portal), jsonwebtoken (heater/massmole), python-jose (pump) |
 | Session Management | PostgreSQL sessions table | Token hash stored, validated on every API call |
 | AI | Anthropic Claude SDK | claude-haiku-4-5-20251001 (default), Sonnet/Opus via secret selector |
+| Dashboard AI | Anthropic REST API | claude-haiku-4-5-20251001, dynamic system prompt from pillars config |
 | Email | Nodemailer | Gmail App Password, CSS-only HTML templates |
 | Database | PostgreSQL 16 | Alpine image, Docker volume persistence |
 | Pump Backend | Python 3.11 + FastAPI + uvicorn | numpy, scipy, plotly, asyncpg |
-| Optimizer Backend | PHP | DataPreprocessor, CrossValidator, genetic algorithm |
+| Optimizer Backend | PHP | DataPreprocessor, CrossValidator, genetic algorithm, Chart.js |
 | Containers | Docker Compose v2 | 6 services on bridge network |
 | Web Server | Nginx | System service, reverse proxy + static files |
 | SSL | Let's Encrypt (Certbot) | Auto-renewal on staging |
@@ -128,3 +141,7 @@ Security headers applied globally: `X-Frame-Options: SAMEORIGIN`, `X-Content-Typ
 4. **Thin client pattern:** App frontends are vanilla JS SPAs that call server APIs. They render results and charts but contain no calculation logic. The heater has 406 formulas — all 406 run server-side.
 
 5. **AI tool-use pattern:** The AI chatbot uses Claude's tool-use capability to interact with each app's engine. The AI calls server-side tools (e.g., `run_calculation`, `fill_input_fields`) and returns structured action objects that the frontend renders (animated cursor, field filling, chart updates).
+
+6. **Iframe integration:** Apps are embedded within the portal via iframes using `/_proxy/` Nginx paths. The portal's sidebar and navigation remain visible while the app runs in an iframe. Apps detect embedding via `window.parent !== window` and hide their own navigation to avoid duplication.
+
+7. **7-pillar dashboard:** The dashboard organizes all apps (live and coming-soon) into 7 strategic pillars, each with collapsible sections. A centralized `pillars-config.js` defines all app metadata, pillars, and coming-soon status.

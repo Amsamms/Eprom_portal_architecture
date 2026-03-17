@@ -1,6 +1,6 @@
 # Design System
 
-**Last Generated:** 2026-03-14
+**Last Generated:** 2026-03-17
 
 ---
 
@@ -128,8 +128,8 @@ All apps were unified to the same light theme in Session 40.
 - Hover: border tints to blue `rgba(0,82,155,0.25)`, shadow deepens, translateY(-2px)
 
 **Glassmorphism card (`.glass-card-frost`):**
-- Background: `rgba(255, 255, 255, 0.75)` with `backdrop-filter: blur(16px)`
-- Used on login page and dashboard overlays
+- Background: `rgba(255, 255, 255, 0.94)` with `backdrop-filter: blur(16px)`
+- Used on login page and dashboard overlays (lightened in Session 47)
 
 ### KPI Cards
 
@@ -151,34 +151,64 @@ All apps were unified to the same light theme in Session 40.
 All apps use a gradient header:
 - Background: `linear-gradient(135deg, #00529B, #003F7A)` (dark blue gradient)
 - Text: white
-- EPROM logo with shimmer animation (`logoShimmer` — subtle brightness pulse with green drop-shadow)
+- EPROM logo (local SVG — `eprom-logo.svg`) with shimmer animation (`logoShimmer` — subtle brightness pulse with green drop-shadow)
 - Height adapts for mobile
+
+---
+
+## AI Chat Icon (Two-Drops SVG)
+
+All 5 chatbots (Dashboard, Heater, Pump, MassMole, Optimizer) use a standardized icon — the "two-drops" SVG:
+
+- **Blue drop:** `#1565C0`
+- **Green drop:** `#4CAF50`
+- **Avatar container:** White `#FFFFFF` circle with `1.5px solid #D9DEE5` border, 36px diameter
+- Used in: FAB button, chat header, AI message avatar
+
+This was unified across all apps in Sessions 51-52 for consistent branding.
 
 ---
 
 ## Chat Panel
 
 ### Desktop (>1200px)
-- Side panel: 400px fixed width
+- Side panel: 400–420px fixed width
 - Main content shrinks to accommodate (push-aside layout, not overlay)
 - Toggle button in header or floating
 
 ### Mobile
 - 3-state bottom sheet:
   - **Peek:** Small handle visible at bottom (~60px)
-  - **Half:** Takes 55vh of screen
-  - **Full:** Takes ~95vh of screen
+  - **Half:** Takes 50–55vh of screen
+  - **Full:** Takes ~92–95vh of screen
 - Drag handle for gesture control
 - Snap points for each state
+
+### Chat Headers
+All chat panels use a **white background** with dark text (`#1A2B4A`), standardized in Sessions 51-52. The close (X) button uses `#5A6A85` with hover `#1A2B4A`.
+
+### Chat FAB (Floating Action Button)
+- White circle with two-drops SVG icon
+- Hides when chat panel is open (via `body.chat-open` CSS class)
+- In iframe mode: apps hide their own navigation but keep the FAB visible
 
 ### Chat Bubbles
 - User messages: blue-tinted background, right-aligned
 - AI messages: light gray background, left-aligned
-- EPROM avatar on AI messages
+- Two-drops avatar on AI messages
 - Typing indicator: animated dots
 - Markdown rendering in AI responses
 - Code blocks with copy button
 - Timestamps on each message
+
+### Onboarding Tips
+First-time users see contextual tips during their first 4 visits:
+- Visit 1 mobile: "Drag the gray handle to collapse/expand the chat"
+- Visit 1 desktop: "Your AI assistant can fill inputs and analyze results"
+- Visit 2: "Try the quick action chips for common tasks"
+- Visit 3: "Press Ctrl+/ to toggle chat, Escape to close"
+- Visit 4: "The AI can compare scenarios and explain results"
+- Auto-dismiss after 8 seconds, dismissible via X button
 
 ---
 

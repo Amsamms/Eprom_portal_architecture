@@ -1,18 +1,18 @@
 # AI Chat System
 
-**Last Generated:** 2026-03-14
+**Last Generated:** 2026-03-17
 
 ---
 
 ## Overview
 
-All 4 calculation apps (Heater, Pump, MassMole, Optimizer) share a common AI chatbot library and UX pattern. The AI assistant is called "EPROM AI Companion" and is powered by Anthropic Claude (Haiku by default, with secret access to Sonnet and Opus).
+All 4 calculation apps (Heater, Pump, MassMole, Optimizer) plus the Dashboard share a common AI chatbot UX pattern. The AI assistant is called "EPROM AI Companion" and is powered by Anthropic Claude (Haiku by default, with secret access to Sonnet and Opus). All 5 chatbots were unified visually and behaviorally in Sessions 51-52.
 
 ---
 
 ## Shared Library: `chat-base.js`
 
-All apps use `chat-base.js` — a shared JavaScript library that provides the complete chat UI and interaction logic via a configuration pattern. Each app creates a `ChatBase` instance with app-specific config.
+All 4 calculation apps use `chat-base.js` — a shared JavaScript library that provides the complete chat UI and interaction logic via a configuration pattern. Each app creates a `ChatBase` instance with app-specific config. The Dashboard AI Companion (`EpromCompanion.js`) is a standalone React component but follows the same visual patterns.
 
 ### Configuration Pattern
 
@@ -58,12 +58,32 @@ const chat = new ChatBase({
 | **Stop generation** | Button to cancel ongoing AI response |
 | **Keyboard shortcuts** | `Escape` to close chat, `Ctrl+/` to toggle |
 | **Auto-resize textarea** | Input grows with content |
-| **localStorage history** | Chat messages persist across page refreshes (per conversation) |
+| **Session-based history** | Chat messages persist in localStorage but clear on new browser sessions (via sessionStorage flag) |
 | **Clear chat** | Trash icon button to clear history and reset conversation |
-| **EPROM avatar** | Consistent branding on AI messages |
+| **Two-drops avatar** | Standardized SVG icon on AI messages (blue drop `#1565C0` + green drop `#4CAF50`) |
 | **Desktop side panel** | 400px fixed width, push-aside layout (>1200px) |
-| **Mobile bottom sheet** | 3-state: peek (~60px), half (55vh), full (~95vh) |
+| **Mobile bottom sheet** | 3-state: peek (~60px), half (50-55vh), full (~92-95vh) |
 | **Model selector** | Hidden Easter egg (10 clicks on logo) for Haiku/Sonnet/Opus |
+| **Onboarding tips** | Contextual guidance for first 4 visits (auto-dismiss after 8s) |
+| **FAB dismiss** | Chat FAB hides when panel is open (via `body.chat-open` class) |
+| **White header** | All chat panels use white background with dark text |
+
+---
+
+## Dashboard AI Companion: `EpromCompanion.js`
+
+The Dashboard has its own AI chatbot — a React component (`EpromCompanion.js`, ~270 lines) that provides portal navigation assistance. It uses the Anthropic REST API directly (no SDK) with `claude-haiku-4-5-20251001`.
+
+### Key Differences from App Chatbots
+- **React component** (not vanilla JS `ChatBase` class)
+- **Dynamic system prompt** generated at module load from `pillars-config.js` (describes 7 pillars, all apps, coming-soon status)
+- **Links use `/view/` prefix** to open apps in iframe mode
+- **Only appears on dashboard** (removed from `/view/` and `/apps/` layouts)
+- **Rate limited:** 10 req/min per user
+- **In-memory conversation store:** 20 messages max
+
+### API Endpoint
+`POST /api/dashboard/chat` — portal's own chat route, separate from app chat routes.
 
 ---
 
@@ -188,12 +208,13 @@ Suggested prompts displayed below the chat input. Each app has domain-specific c
 - Pump: "Calculate pump efficiency", "Show NPSH analysis"
 - MassMole: "Load natural gas preset", "Convert to mass basis"
 - Optimizer: "Run feature importance", "Optimize parameters"
+- Dashboard: "What apps are available?", "Tell me about the heater"
 
 ### Insight Cards
 Styled cards that the AI can return for key findings — formatted with title, value, description, and a colored accent bar. Used for KPI summaries and engineering recommendations.
 
-### Chat History Persistence
-Messages are stored in `localStorage` keyed by `${appName}_chat_history`. Persists across page refreshes but clears on explicit "Clear Chat" action. Each app has its own key to prevent cross-app history leaks (fixed in Session 36 — was previously a shared key collision bug).
+### Session-Based History Clearing
+Messages are stored in `localStorage` keyed by `${appName}_chat_history`. History clears automatically on new browser sessions (detected via a `sessionStorage` flag). This prevents stale conversations from accumulating while preserving history within a single session. The welcome message naturally reappears on each new session.
 
 ### Model Selector Easter Egg
 Click the EPROM logo 10 times → reveals a dropdown menu with:
@@ -217,7 +238,8 @@ Chat conversations are stored in two places:
 
 | App | Tools | Visual Actions | Model Default |
 |-----|-------|---------------|---------------|
+| Dashboard | 0 (text-only, no tools) | No | Haiku |
 | Heater | 7 (fill_inputs, trigger_calculate, get_current_results, get_current_inputs, load_scenario, scroll_to_section, show_insight) | Yes (cursor fills form fields) | Haiku |
 | Pump | 6 (fill_inputs, trigger_calculate, get_current_results, get_current_inputs, show_insight, display_results) | Yes (with before/after hooks) | Haiku |
 | MassMole | 8 (search_compound, get_compound_details, fill_composition, trigger_calculate, load_preset, clear_composition, switch_basis, show_insight) | No (uses action callbacks) | Haiku |
-| Optimizer | 8 (upload_data, set_target_column, run_preprocessing, calculate_importance, run_optimization, get_results, get_data_summary, show_insight) | No (routes to PHP API) | Haiku |
+| Optimizer | 9 (upload_data, set_target_column, run_preprocessing, calculate_importance, run_optimization, one_click_analysis, get_results, get_data_summary, show_insight) | No (routes to PHP API) | Haiku |

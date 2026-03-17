@@ -1,6 +1,6 @@
 # Database Schema & Authentication
 
-**Last Generated:** 2026-03-14
+**Last Generated:** 2026-03-17
 
 ---
 
@@ -43,6 +43,8 @@ All calculation log tables store `inputs` and `outputs` as JSONB, plus `duration
 | `optimizer_chat_logs` | Optimizer |
 
 All chat log tables share the same schema: `user_id`, `conversation_id`, `role`, `content`, `tool_calls` (JSONB), `model`, `tokens_input`, `tokens_output`, `ip_address`.
+
+**Note:** The Dashboard AI Companion does not log chat messages to the database (in-memory only, 20 messages max).
 
 ### Subscription Tables
 
@@ -110,6 +112,7 @@ All chat log tables share the same schema: `user_id`, `conversation_id`, `role`,
 | `POST /api/auth/login` | 5 attempts / 15 min per IP | In-memory Map (portal) |
 | `POST /api/calculate` | 30 requests / min per user | In-memory (heater/massmole), slowapi (pump) |
 | `POST /api/chat` | 10 requests / min per user | In-memory (heater/massmole), slowapi (pump) |
+| `POST /api/dashboard/chat` | 10 requests / min per user | In-memory Map (portal) |
 | `POST /api/auth/signup` | No rate limit (known gap) | — |
 
 Rate limiting is in-memory (JavaScript `Map` or Python slowapi) — resets on container restart. IP extraction reads `x-forwarded-for` header (known spoofable — see security posture document).
@@ -121,7 +124,7 @@ Rate limiting is in-memory (JavaScript `Map` or Python slowapi) — resets on co
 | File | Purpose |
 |------|---------|
 | `portal/src/lib/auth.js` | `hashPassword()`, `verifyPassword()`, `signToken()`, `verifyToken()`, `validateSession()`, `requireAdmin()`, `getTokenFromRequest()` |
-| `portal/src/middleware.js` | Next.js Edge middleware — JWT signature verification for protected page routes |
+| `portal/src/middleware.js` | Next.js Edge middleware — JWT signature verification for protected page routes (including `/view/` paths) |
 | `portal/src/hooks/useUser.js` | React hook — fetches user data from `/api/auth/me` (server-verified role, never trusts localStorage) |
 | `heater/lib/auth.js` | JWT verify + session check + heater permission check |
 | `pump/src/lib/auth.py` | JWT verify + session check + pump permission check (python-jose) |

@@ -1,6 +1,6 @@
 # Roadmap & Ideas
 
-**Last Generated:** 2026-03-14
+**Last Generated:** 2026-03-17
 
 ---
 
@@ -23,7 +23,6 @@
 | Idea | Summary |
 |------|---------|
 | **PDF Report Export** | Branded EPROM PDF export using jsPDF (client-side). Phase 1 covers Heater + MassMole. Intended as a credits-based premium feature (Professional tier and above). Full content: KPIs + Charts + All Inputs + All Outputs. Depends on the AI credits system being implemented first. |
-| **Mobile Experience Parity** | Port the optimizer's superior mobile CSS to heater/pump/massmole. The optimizer has zero framework conflicts and exhaustive responsive coverage. Other apps need: momentum scrolling, 44px touch targets, responsive font sizes, header reflow, progressive padding. |
 
 ### Low Priority
 
@@ -32,7 +31,7 @@
 | **Saved Calculations** | Save, name, and revisit past calculations per user. Currently all results are lost on page refresh. |
 | **Bulk Calculations** | Upload CSV of multiple input sets, get batch results. Enables parametric studies. |
 | **Arabic Language Support** | Arabic RTL interface — UI labels, buttons, navigation. The AI already responds in Arabic when asked. |
-| **User Onboarding Tour** | 4-step guided tour for first-time users per app. Reduces support questions. |
+| **User Onboarding Tour** | Full guided tour with step-by-step overlays per app. Basic onboarding tips (4 visits, auto-dismiss) are already implemented. |
 | **Comparison Mode** | Side-by-side comparison of 2–3 saved scenarios with highlighted differences. |
 | **AI Chat Export** | Export AI chat conversation as PDF or Markdown for project documentation. |
 | **Webhook/Email Notifications** | Email alerts for threshold breaches, new signups, etc. |
@@ -40,10 +39,17 @@
 
 ---
 
-## Implemented Features (Sessions 27–45)
+## Implemented Features (Sessions 27–53)
 
 | Feature | Session | Summary |
 |---------|---------|---------|
+| **Heater Process Schematic** | 53 | Professional SVG schematic of fired heater with 8 KPI annotations (Stack Temp, Flue Gas Flow, Thermal Eff, Fuel Eff, Excess Air, GHG Rate, Absorbed Duty, Radiant/Conv). Count-up animations with ease-out cubic, animated flow arrows, responsive at 3 breakpoints. Replaced unused Trends inputs with 4 user-configurable Design Data fields. |
+| **AI Chatbot Consistency** | 51–52 | Unified all 5 AI chatbots: standardized two-drops SVG icons (blue `#1565C0` + green `#4CAF50`), white headers, FAB dismiss on open, mobile bottom sheet (3-state), session-based history clearing, onboarding tips (4 visits), dynamic dashboard system prompt from pillars config, 70 Playwright tests. |
+| **Optimizer V2** | 50 | One-click analysis (preprocessing → importance → optimization in one call), paste from Excel input (with auto-delimiter and auto-transpose detection), feature response charts (Chart.js, 50-step sweep per feature), new `one_click_analysis` AI tool (now 9 tools total). |
+| **Coming Soon Apps + Dashboard Overhaul** | 49 | 10 new coming-soon apps (6 equipment + 4 process tools), 7-pillar renaming, collapsible sidebar (DashboardShell component), collapsible dashboard pillar sections, heater action bar fix for iframe mode. |
+| **Dashboard Redesign** | 48 | 7-pillar dashboard structure, universal sidebar with pillar navigation, iframe app integration (`/view/{slug}` + `/_proxy/` Nginx paths), Dashboard AI Companion (EpromCompanion.js rewrite to 270 lines), hide app nav in iframe mode. |
+| **Login/Signup Refinements** | 47 | "Request Access" → "Create Account", removed "Engineering Portal" subtitle, lightened login card, browser autofill fix. |
+| **KVM Deploy + Testing** | 46 | 130/130 Playwright tests on Company KVM, logo fix (local SVG replacing external URLs), report download fix (iframe sandbox `allow-downloads`), database migration sync. |
 | **Admin Analytics Dashboard** | 45 | Full overhaul: global admin stats (Total Users, Active Sessions, Total Logins, Total Activity), session lifecycle tracking (soft-delete with `ended_at` + `end_reason`), user journey timeline, admin-only activity log with User column + dynamic filters (user/app/action/date), clickable session links, Top Active Users table. |
 | **AI Token Optimization** | 44 | Two strategies: `cleanForClaude()` trims tool output before sending, `summarizeOldToolResults()` compresses history. Heaviest pump conversation: 92K → 13K tokens (86% reduction). All 4 apps. Quality improved. |
 | **System Prompt Regression Audit** | 42 | Reverted session 32's damaging "brief summary" rule in all 4 system prompts. Restored original Important Rules, multi-case examples, and error recovery instructions. |
@@ -66,5 +72,8 @@
 | EGYPES Exhibition Demo | Pending | Requires stable prototype with heater + soft sensors + carbon footprint (30 March – 1 April 2026) |
 | Domain `ese.eprom.com.eg` Live | Pending | Blocked on DNS coordination with Telecom Egypt + SSL setup on company VM |
 | Pre-Production Security Audit | Pending | Must complete before domain goes live |
-| Company VM Migration | Complete | 16/16 verification checks passed, all 6 containers running |
+| Company VM Migration | Complete | 16/16 verification checks passed, all 6 containers running, 130/130 Playwright tests passed |
 | AI Credits System | Not Started | High priority — needed for cost control and subscription monetization |
+| Chatbot Consistency | Complete | All 5 chatbots unified (Sessions 51-52) |
+| Optimizer V2 | Complete | One-click analysis, paste from Excel, feature response charts (Session 50) |
+| 7-Pillar Dashboard | Complete | Iframe integration, sidebar, collapsible sections (Sessions 48-49) |

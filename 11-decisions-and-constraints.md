@@ -1,6 +1,6 @@
 # Decisions & Constraints
 
-**Last Generated:** 2026-03-14
+**Last Generated:** 2026-03-17
 
 ---
 
@@ -50,9 +50,9 @@ The IT department mandated these security measures:
 
 | Requirement | Status |
 |------------|--------|
-| SQL injection prevention | ✅ Done — all queries parameterized |
-| Complex passwords | ✅ Done — bcrypt with cost factor 12 |
-| HTTPS enforcement | ✅ Done on staging, pending on production |
+| SQL injection prevention | Done — all queries parameterized |
+| Complex passwords | Done — bcrypt with cost factor 12 |
+| HTTPS enforcement | Done on staging, pending on production |
 | Web Application Firewall (WAF) | Pending — IT to provide network-level WAF, or ModSecurity to be installed |
 | Two-Factor Authentication (2FA) | Planned — via Orange/SMS, not yet implemented |
 
@@ -106,13 +106,13 @@ This financial friction directly impacts the AI credits system design — the sy
 
 ## Design Constraints (Technical)
 
-These constraints emerged from 45 sessions of development and should not be violated:
+These constraints emerged from 53 sessions of development and should not be violated:
 
 1. **Server-side computation only** — All formulas, AI logic, and engineering calculations must run on the server. Zero business logic in browser JavaScript. This is non-negotiable for IP protection.
 
 2. **Shared JWT authentication** — All apps share a single JWT secret and cookie (`eprom_token`). Do not introduce separate auth systems per app.
 
-3. **Shared chat library** — All 4 apps use `chat-base.js` (config pattern). New apps must use this library, not create their own chat implementation.
+3. **Shared chat library** — All 4 calculation apps use `chat-base.js` (config pattern). New apps must use this library, not create their own chat implementation. The Dashboard companion is a separate React component but follows the same visual patterns.
 
 4. **Vendor CSS override pattern** — The heater app uses Bootstrap (dark theme) with `!important` overrides to match EPROM corporate styling. This pattern should be used for any app that imports a CSS framework.
 
@@ -121,3 +121,9 @@ These constraints emerged from 45 sessions of development and should not be viol
 6. **Docker Compose v2** — Use `docker compose` (v2 plugin). `docker-compose` (v1) is broken and should never be used.
 
 7. **Mobile-first** — The majority of users access the portal on mobile devices. All design decisions should prioritize mobile usability with 44px touch targets minimum.
+
+8. **Always use `--build`** — When deploying with `docker compose up -d`, always include `--build` to prevent Docker from caching stale images (learned in Session 52).
+
+9. **Local logos** — All EPROM logo references use local SVG files (`eprom-logo.svg`), never external URLs (fixed in Session 46 when `apex.eprom.com.eg` URLs were replaced).
+
+10. **Iframe embedding pattern** — Apps loaded via `/_proxy/` paths must detect iframe mode and hide their own navigation while keeping the AI chat FAB visible.

@@ -1,6 +1,6 @@
 # Security Posture
 
-**Last Generated:** 2026-03-14
+**Last Generated:** 2026-03-17
 
 ---
 
@@ -17,6 +17,7 @@ The platform has solid security fundamentals for an internal engineering tool:
 7. **Network isolation** — All Docker containers bind to `127.0.0.1` only, Nginx proxies all traffic
 8. **Firewall locked down** — UFW allows only ports 22, 80, 443
 9. **System hardening** — fail2ban active for SSH brute-force protection, unattended-upgrades enabled
+10. **130 Playwright tests passed** on Company KVM (Session 46) — comprehensive functional verification across all apps
 
 ---
 
@@ -59,7 +60,7 @@ Rate limiters read `x-forwarded-for` (a client-controlled header) for IP identif
 | M4 | **Prompt injection detected but not blocked** | Detected injection patterns are logged but still sent to the AI model. System prompt guardrails are advisory only |
 | M5 | **No Docker resource limits** (EC2 only) | One container can consume all memory (company VM has override limits) |
 | M6 | **Email templates interpolate unsanitized user data** | XSS in admin notification emails |
-| M7 | **Unbounded in-memory conversation store** | Chat history grows forever, no eviction, lost on restart |
+| M7 | **Unbounded in-memory conversation store** | Chat history grows forever, no eviction, lost on restart (Dashboard companion limited to 20 messages) |
 | M8 | **No lock files committed** | Non-reproducible builds, vulnerable to dependency substitution |
 | M9 | **No signup rate limiting** | Unlimited signup requests enable email bombing and junk accounts |
 | M10 | **Nginx server version disclosed** | `server_tokens off;` is commented out |

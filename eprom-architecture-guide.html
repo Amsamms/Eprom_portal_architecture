@@ -319,7 +319,7 @@
 <body>
 
 <h1>EPROM Portal</h1>
-<p class="subtitle">Architecture Guide — Meeting Reference<br>Last updated: March 14, 2026</p>
+<p class="subtitle">Architecture Guide — Meeting Reference<br>Last updated: March 17, 2026</p>
 
 <!-- NAV -->
 <nav class="nav-dots">
@@ -469,7 +469,8 @@
   </div>
   <p style="font-size:0.82rem;color:var(--muted)">
     ML feature importance + parameter optimization. <strong style="color:var(--text)">Hybrid Node.js + PHP</strong> architecture.
-    <br>Node.js handles auth & AI chat; PHP/Apache handles data science (Pearson correlation, random search optimization).
+    <br>Node.js handles auth & AI chat (9 tools); PHP/Apache handles data science (Pearson correlation, random search optimization).
+    <br>V2 features: one-click analysis, paste from Excel, feature response charts (Chart.js).
   </p>
 </div>
 </section>
@@ -765,19 +766,12 @@
         <td style="font-family:monospace">3007</td>
       </tr>
       <tr>
-        <td>Carbon Footprint</td>
-        <td><span class="badge badge-yellow">Planned</span></td>
-        <td style="font-family:monospace;color:var(--muted)">3002</td>
+        <td>Interactive Reports</td>
+        <td><span class="badge badge-green">Live</span></td>
+        <td style="font-family:monospace;color:var(--muted)">Nginx</td>
       </tr>
       <tr>
-        <td>Soft Sensors</td>
-        <td><span class="badge badge-yellow">Planned</span></td>
-        <td style="font-family:monospace;color:var(--muted)">3003</td>
-      </tr>
-      <tr>
-        <td>Leak Detection</td>
-        <td><span class="badge badge-yellow">Planned</span></td>
-        <td style="font-family:monospace;color:var(--muted)">3004</td>
+        <td colspan="3" style="color:var(--muted);font-size:0.75rem;font-style:italic;padding-top:12px;">+ 12 coming-soon apps: Turbine, Boiler, Cooling Tower, Distillation, Air Cooler, Separators, Compressors, Heat Exchanger, Unit Converter, Fluid Properties, Pipe Sizer, Relief Valve</td>
       </tr>
     </tbody>
   </table>
@@ -819,7 +813,7 @@
   </div>
   <div class="qa-item">
     <div class="qa-q">"How many apps?"</div>
-    <div class="qa-a">4 live (heater, pump, massmole, optimizer), 3 planned (carbon, sensors, leak detection).</div>
+    <div class="qa-a">5 live (heater, pump, massmole, optimizer, reports) + 12 coming soon across 7 pillars (equipment, process tools, sensors, optimization, sustainability, safety, knowledge).</div>
   </div>
   <div class="qa-item">
     <div class="qa-q">"How's security?"</div>
@@ -831,7 +825,7 @@
   </div>
   <div class="qa-item">
     <div class="qa-q">"Does it use AI?"</div>
-    <div class="qa-a">Yes — each calculator app has a Claude AI chat assistant that can analyze results and give engineering recommendations.</div>
+    <div class="qa-a">Yes — each calculator app has a Claude AI chat assistant that can analyze results and give engineering recommendations. Plus a Dashboard AI Companion that helps users navigate the portal. All 5 chatbots share a unified design (blue-green water drop icon).</div>
   </div>
   <div class="qa-item">
     <div class="qa-q">"Single sign-on?"</div>
@@ -887,8 +881,10 @@
 <div class="diagram"><span class="hl">Browser</span> &rarr; <span class="hly">Nginx</span> (port 80/443)
                  |
                  +&rarr; <span class="hl">/</span>               &rarr; Portal     (port 3000)
-                 +&rarr; <span class="hl">/apps/heater/</span>   &rarr; Heater     (port 3001)
-                 +&rarr; <span class="hl">/apps/pump/</span>     &rarr; Pump       (port 3005)
+                 +&rarr; <span class="hl">/apps/heater/</span>   &rarr; Heater     (port 3001)  [direct]
+                 +&rarr; <span class="hl">/_proxy/heater/</span> &rarr; Heater     (port 3001)  [iframe]
+                 +&rarr; <span class="hl">/apps/pump/</span>     &rarr; Pump       (port 3005)  [direct]
+                 +&rarr; <span class="hl">/_proxy/pump/</span>   &rarr; Pump       (port 3005)  [iframe]
                  +&rarr; <span class="hl">/apps/massmole/</span> &rarr; MassMole   (port 3006)
                  +&rarr; <span class="hl">/apps/optimizer/</span>&rarr; Optimizer  (port 3007)
                  |
@@ -949,9 +945,13 @@
 |   |   +-- <span class="file">massmole-logs/page.js</span>
 |   |   +-- <span class="file">optimizer-logs/page.js</span>
 |   |
-|   +-- <span class="dir">apps/</span>                         <span class="comment">App loading pages</span>
-|   |   +-- <span class="file">[slug]/page.js</span>           <span class="comment">Dynamic loader &mdash; loads any app in an iframe</span>
-|   |   +-- <span class="file">sensors/page.js</span>          <span class="comment">Soft sensors placeholder (coming soon)</span>
+|   +-- <span class="dir">view/</span>                          <span class="comment">Iframe app wrappers (sidebar visible)</span>
+|   |   +-- <span class="file">layout.js</span>                <span class="comment">Sidebar wrapper for iframe apps</span>
+|   |   +-- <span class="file">[slug]/page.js</span>           <span class="comment">Loads app in iframe via /_proxy/ + auth check</span>
+|   |
+|   +-- <span class="dir">apps/</span>                          <span class="comment">Portal-native app pages</span>
+|   |   +-- <span class="file">layout.js</span>                <span class="comment">Sidebar wrapper for portal-native apps</span>
+|   |   +-- <span class="file">[slug]/page.js</span>           <span class="comment">Dynamic loader for coming-soon apps</span>
 |   |
 |   +-- <span class="file">login/page.js</span>                <span class="comment">Login form</span>
 |   +-- <span class="file">signup/page.js</span>               <span class="comment">Sign up form</span>
@@ -965,13 +965,15 @@
 |   +-- <span class="file">rate-limit.js</span>                <span class="comment">5 login attempts per 15 min per IP</span>
 |   +-- <span class="file">email.js</span>                     <span class="comment">Sends verification emails (Nodemailer)</span>
 |   +-- <span class="file">reports-config.js</span>            <span class="comment">Static report file paths</span>
+|   +-- <span class="important">pillars-config.js</span>        <span class="comment">7 pillars, all app metadata, coming-soon flags</span>
 |
 +-- <span class="dir">hooks/</span>
 |   +-- <span class="file">useUser.js</span>                   <span class="comment">React hook &mdash; fetches /api/auth/me for current user</span>
 |
 +-- <span class="dir">components/</span>
-|   +-- <span class="file">Sidebar.js</span>                   <span class="comment">Navigation sidebar (apps list, admin link)</span>
-|   +-- <span class="file">EpromCompanion.js</span>            <span class="comment">Portal-level AI chat</span>
+|   +-- <span class="file">DashboardShell.js</span>            <span class="comment">Collapsible sidebar wrapper (desktop push, mobile overlay)</span>
+|   +-- <span class="file">Sidebar.js</span>                   <span class="comment">7-pillar navigation sidebar with app groups</span>
+|   +-- <span class="file">EpromCompanion.js</span>            <span class="comment">Dashboard AI Companion (270-line React chatbot)</span>
 |
 +-- <span class="important">middleware.js</span>                <span class="comment">Checks "are you logged in?" for every request</span></div>
 
@@ -986,8 +988,8 @@
 </div>
 
 <div class="qa-item">
-  <div class="qa-q">How does the app loader ([slug]/page.js) work?</div>
-  <div class="qa-a">When you click "Heater" on the dashboard, it navigates to <code>/apps/heater</code>. The <code>[slug]</code> page reads the slug ("heater"), checks your permissions, and loads the heater app inside an iframe pointed at <code>/apps/heater/</code>.</div>
+  <div class="qa-q">How does the app loader work?</div>
+  <div class="qa-a">When you click "Heater" on the dashboard, it navigates to <code>/view/heater</code>. The page checks your permissions, then loads the heater app inside an iframe pointed at <code>/_proxy/heater/</code>. The portal sidebar stays visible while the app runs in the iframe. The app hides its own navigation to avoid duplication.</div>
 </div>
 </div>
 </div>
@@ -1000,6 +1002,7 @@
 <p style="font-size:0.85rem;color:var(--muted);margin:12px 0;">
   Built with <strong style="color:var(--text)">Express.js</strong> (Node.js). Takes 43 input parameters (fuel composition, temperatures, pressures),
   runs them through <strong style="color:var(--text)">406 engineering formulas</strong>, and produces KPIs like thermal efficiency, excess air, and GHG rate.
+  After calculation, displays a <strong style="color:var(--text)">professional SVG process schematic</strong> with 8 animated KPI annotations at process-correct locations.
 </p>
 
 <div class="folder-tree"><span class="dir">heater/</span>
