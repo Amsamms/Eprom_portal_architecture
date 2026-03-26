@@ -1,6 +1,6 @@
 # Database Schema & Authentication
 
-**Last Generated:** 2026-03-17
+**Last Generated:** 2026-03-26
 
 ---
 
@@ -10,7 +10,7 @@ Runs as `eprom_db` container (postgres:16-alpine) on the internal Docker network
 
 ---
 
-## Table Overview (15 Tables)
+## Table Overview (17 Tables)
 
 ### Core Tables
 
@@ -50,18 +50,27 @@ All chat log tables share the same schema: `user_id`, `conversation_id`, `role`,
 
 | Table | Purpose |
 |-------|---------|
-| `subscription_plans` | Defines tiers: Basic, Professional, Enterprise. Columns: `name`, `display_name`, `apps` (JSONB array), `has_ai_access`, `color`, `sort_order` |
+| `subscription_plans` | Defines tiers: Basic, Professional, Enterprise. Columns: `name`, `display_name`, `apps` (JSONB array), `has_ai_access`, `color`, `sort_order`, `ai_monthly_quota`, `ai_is_trial` |
 | `user_subscriptions` | Links users to plans. Columns: `user_id`, `plan_id`, `starts_at`, `expires_at`, `is_active`, `granted_by`, `notes` |
+
+### AI Credits Tables (Session 53)
+
+| Table | Purpose |
+|-------|---------|
+| `ai_credit_balances` | One row per user. Columns: `user_id` (PK), `monthly_units`, `topup_units`, `monthly_quota`, `period_start`, `period_end`, `is_trial`, `trial_used`, `updated_at`. Monthly credits auto-reset when period expires. |
+| `ai_credit_transactions` | Audit ledger. Columns: `user_id`, `type` (usage/grant/reset), `units`, `source` (monthly/topup), `balance_after_monthly`, `balance_after_topup`, `app_name`, `description`, `granted_by` |
 
 ---
 
 ## Subscription Tiers
 
-| Tier | Apps Included | AI Access | Color |
+| Tier | Apps Included | AI Credits | Color |
 |------|--------------|-----------|-------|
-| **Basic** | Reports only | No | `#5A6A85` (gray) |
-| **Professional** | Heater, Pump, MassMole, Reports | No | `#00529B` (blue) |
-| **Enterprise** | All apps (heater, pump, massmole, carbon, sensors, leak, optimizer, reports) | Yes | `#00A651` (green) |
+| **Basic** | Reports only | 10 units (trial, one-time) | `#5A6A85` (gray) |
+| **Professional** | Heater, Pump, MassMole, Reports | 50 units/month | `#00529B` (blue) |
+| **Enterprise** | All apps (heater, pump, massmole, carbon, sensors, leak, optimizer, reports) | 500 units/month | `#00A651` (green) |
+
+New users are auto-assigned the Basic plan on email verification and receive 10 trial credits.
 
 ---
 

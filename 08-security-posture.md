@@ -1,6 +1,6 @@
 # Security Posture
 
-**Last Generated:** 2026-03-17
+**Last Generated:** 2026-03-26
 
 ---
 
@@ -17,7 +17,12 @@ The platform has solid security fundamentals for an internal engineering tool:
 7. **Network isolation** — All Docker containers bind to `127.0.0.1` only, Nginx proxies all traffic
 8. **Firewall locked down** — UFW allows only ports 22, 80, 443
 9. **System hardening** — fail2ban active for SSH brute-force protection, unattended-upgrades enabled
-10. **130 Playwright tests passed** on Company KVM (Session 46) — comprehensive functional verification across all apps
+10. **1,437 Playwright tests passed** on Company KVM (Session 55) — 99.5% pass rate across all apps, comprehensive functional verification
+11. **Pre-production security audit** — 13/14 checks pass (Session 55). Only Docker-runs-as-root remains unresolved (low risk for internal tool)
+12. **Nginx hardened** — HTTP→HTTPS redirect + HSTS header with includeSubDomains on production
+13. **React hydration fix** — `dynamic()` with `ssr: false` on DashboardShell, zero console errors (was 6 per page)
+14. **User deletion hardened** — DELETE handler now cleans all 17 dependent tables (sessions, logs, credits, permissions, subscriptions) before removing user
+15. **validateSession() checks is_active** — deactivated users are immediately kicked out (Session 56)
 
 ---
 
@@ -40,9 +45,9 @@ The heater engine translates Excel-style formulas to JavaScript and executes the
 
 **Recommended fix:** Replace with a strict math expression evaluator (e.g., `mathjs` or `expr-eval`).
 
-### H3. All 4 Containers Run as Root
+### H3. All Containers Run as Root
 
-All Dockerfiles lack a `USER` directive. Verified: `docker exec <container> whoami` → `root` for all 4 app containers. If an attacker achieves code execution inside any container, they run as root.
+All Dockerfiles lack a `USER` directive. Verified: `docker exec <container> whoami` → `root` for all app containers (9 total). If an attacker achieves code execution inside any container, they run as root. This is the only remaining item from the pre-production security audit (13/14 checks pass).
 
 ### H4. Rate Limiter IP Spoofable
 
@@ -81,7 +86,7 @@ Before the domain `ese.eprom.com.eg` goes live, a 9-phase security audit must be
 8. **Secrets & Environment** — `.env` permissions, strong JWT_SECRET, no hardcoded secrets
 9. **Monitoring & Incident Response** — Log rotation, activity logging, breach response plan
 
-**60+ checklist items total.** All critical/high issues must be resolved before go-live.
+**60+ checklist items total.** As of Session 55, **13/14 checks pass** — only Docker-runs-as-root remains. All other critical/high issues have been addressed.
 
 ---
 

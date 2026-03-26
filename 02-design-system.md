@@ -1,6 +1,6 @@
 # Design System
 
-**Last Generated:** 2026-03-17
+**Last Generated:** 2026-03-26
 
 ---
 
@@ -156,16 +156,15 @@ All apps use a gradient header:
 
 ---
 
-## AI Chat Icon (Two-Drops SVG)
+## AI Chat Icon (EPROM Tears Logo)
 
-All 5 chatbots (Dashboard, Heater, Pump, MassMole, Optimizer) use a standardized icon — the "two-drops" SVG:
+All 8 chatbots (Dashboard, Heater, Pump, MassMole, Optimizer-General, Optimizer-Energy, Optimizer-Distillation, Optimizer-Flare) use the official **EPROM tears PNG logo** (`eprom-tears.png`), placed in each app's public assets directory.
 
-- **Blue drop:** `#1565C0`
-- **Green drop:** `#4CAF50`
+- **Image source:** `logo-large-trans.png` (official EPROM branding asset)
+- **3 icon locations per app:** FAB button (floating circle), chat panel header logo, bot message avatar
 - **Avatar container:** White `#FFFFFF` circle with `1.5px solid #D9DEE5` border, 36px diameter
-- Used in: FAB button, chat header, AI message avatar
 
-This was unified across all apps in Sessions 51-52 for consistent branding.
+The original inline two-drops SVG (blue `#1565C0` + green `#4CAF50`) was replaced with the official PNG logo in Session 57 across all 8 apps (16 files modified).
 
 ---
 

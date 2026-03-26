@@ -319,7 +319,7 @@
 <body>
 
 <h1>EPROM Portal</h1>
-<p class="subtitle">Architecture Guide — Meeting Reference<br>Last updated: March 17, 2026</p>
+<p class="subtitle">Architecture Guide — Meeting Reference<br>Last updated: March 26, 2026</p>
 
 <!-- NAV -->
 <nav class="nav-dots">
@@ -339,7 +339,7 @@
 
 <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">
   Think of the VM as a <strong style="color:var(--text)">factory building</strong>.
-  Inside it, 6 independent workers (containers) each do one job.
+  Inside it, 10 independent workers (containers) each do one job.
 </p>
 
 <div class="diagram"><span class="hl">THE INTERNET</span> (your browser)
@@ -357,7 +357,7 @@
 |       +--&gt; <span class="hl2">Heater</span>   (heater calc room)     |
 |       +--&gt; <span class="hlg">Pump</span>     (pump calc room)       |
 |       +--&gt; <span class="hlo">MassMole</span> (chemistry lab)        |
-|       +--&gt; <span class="hl2">Optimizer</span>(ML optimization room)  |
+|       +--&gt; <span class="hl2">Optimizer×4</span>(4 ML optimization rooms)|
 |       |                                      |
 |       |    +----------+                      |
 |       +--&gt; | <span class="hly">Database</span> | (the filing cabinet) |
@@ -368,7 +368,7 @@
 
 <!-- ========== SECTION: WORKERS ========== -->
 <section id="workers">
-<h2><span class="icon">&#128230;</span> The 6 Workers (Docker Containers)</h2>
+<h2><span class="icon">&#128230;</span> The 10 Workers (Docker Containers)</h2>
 
 <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">
   <strong style="color:var(--text)">Docker</strong> = each worker gets their own sealed toolbox.
@@ -457,20 +457,23 @@
   </p>
 </div>
 
-<!-- Optimizer -->
+<!-- 4 Optimizers -->
 <div class="card">
   <div class="card-header">
-    <strong>eprom_optimizer</strong>
-    <span class="badge badge-purple">Port 3007</span>
+    <strong>4 × Optimizer Apps</strong>
+    <span class="badge badge-purple">Ports 3007-3010</span>
   </div>
   <div class="tag-row">
     <span class="tag" style="background:rgba(129,140,248,0.12);color:var(--accent2)">Express.js + PHP</span>
-    <span class="tag" style="background:rgba(74,222,128,0.12);color:var(--green)">Claude AI</span>
+    <span class="tag" style="background:rgba(74,222,128,0.12);color:var(--green)">Claude AI ×4</span>
   </div>
   <p style="font-size:0.82rem;color:var(--muted)">
-    ML feature importance + parameter optimization. <strong style="color:var(--text)">Hybrid Node.js + PHP</strong> architecture.
-    <br>Node.js handles auth & AI chat (9 tools); PHP/Apache handles data science (Pearson correlation, random search optimization).
-    <br>V2 features: one-click analysis, paste from Excel, feature response charts (Chart.js).
+    <strong style="color:var(--text)">4 independent ML optimizers</strong>, each with own Docker container and domain-specific AI chatbot:
+    <br>• <strong style="color:var(--text)">General</strong> (:3007) — general-purpose ML optimization
+    <br>• <strong style="color:var(--text)">Energy</strong> (:3008) — power plant thermal efficiency
+    <br>• <strong style="color:var(--text)">Distillation</strong> (:3009) — distillation column purity
+    <br>• <strong style="color:var(--text)">Flare</strong> (:3010) — flare gas recovery rate
+    <br>Hybrid Node.js + PHP (9 AI tools each). Two-flow UI: paste from Excel or upload file. 50K iterations.
   </p>
 </div>
 </section>
@@ -485,7 +488,7 @@
 
 <div class="folder-tree"><span class="dir">/opt/eprom/</span>                    <span class="comment">The whole project</span>
 |
-+-- <span class="important">docker-compose.yml</span>         <span class="comment">Recipe to run all 5 workers</span>
++-- <span class="important">docker-compose.yml</span>         <span class="comment">Recipe to run all 9 workers</span>
 +-- <span class="important">.env</span>                       <span class="comment">Passwords &amp; secrets</span>
 |
 +-- <span class="dir">portal/</span>                    <span class="comment">MAIN WEBSITE</span>

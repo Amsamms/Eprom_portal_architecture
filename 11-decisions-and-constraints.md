@@ -1,6 +1,6 @@
 # Decisions & Constraints
 
-**Last Generated:** 2026-03-17
+**Last Generated:** 2026-03-26
 
 ---
 
@@ -106,7 +106,7 @@ This financial friction directly impacts the AI credits system design — the sy
 
 ## Design Constraints (Technical)
 
-These constraints emerged from 53 sessions of development and should not be violated:
+These constraints emerged from 57 sessions of development and should not be violated:
 
 1. **Server-side computation only** — All formulas, AI logic, and engineering calculations must run on the server. Zero business logic in browser JavaScript. This is non-negotiable for IP protection.
 
@@ -127,3 +127,7 @@ These constraints emerged from 53 sessions of development and should not be viol
 9. **Local logos** — All EPROM logo references use local SVG files (`eprom-logo.svg`), never external URLs (fixed in Session 46 when `apex.eprom.com.eg` URLs were replaced).
 
 10. **Iframe embedding pattern** — Apps loaded via `/_proxy/` paths must detect iframe mode and hide their own navigation while keeping the AI chat FAB visible.
+
+11. **EPROM tears logo** — All chatbot icons use the official EPROM tears PNG (`eprom-tears.png`), not inline SVGs or external URLs. Each app keeps a copy in its public assets directory.
+
+12. **AI credits gating** — All AI chat routes must check credit balance via `requireAIAccess()` middleware before processing. Credits are deducted post-chat. No client-side model selection — model is server-controlled.

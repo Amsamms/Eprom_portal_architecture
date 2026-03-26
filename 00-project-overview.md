@@ -1,6 +1,6 @@
 # EPROM Portal — Project Overview
 
-**Last Generated:** 2026-03-17
+**Last Generated:** 2026-03-26
 
 ---
 
@@ -26,7 +26,7 @@ Beyond internal use, the project serves three strategic goals:
 
 ## What is the EPROM Portal?
 
-The EPROM Portal is a secure, mobile-first web platform that gives authorized employees and stakeholders access to multiple engineering and data applications through a unified interface. It was built as a solo project by Ahmed Mohamed Sabri (Process Engineer / Developer) over 53 development sessions.
+The EPROM Portal is a secure, mobile-first web platform that gives authorized employees and stakeholders access to multiple engineering and data applications through a unified interface. It was built as a solo project by Ahmed Mohamed Sabri (Process Engineer / Developer) over 57 development sessions.
 
 The portal's core innovation is the integration of "Process Knowledge" (20+ years of operational experience) with "System Knowledge" (AI/ML capabilities). The resulting tools achieve 97–98% accuracy for predictive calculations. Even if the source code were compromised, the underlying expert assumptions — derived from decades of EPROM operational data — remain a proprietary barrier to entry.
 
@@ -34,15 +34,18 @@ The portal's core innovation is the integration of "Process Knowledge" (20+ year
 
 ---
 
-## The Five Live Apps
+## The Eight Live Apps
 
 | App | What It Does | Tech |
 |-----|-------------|------|
 | **Heater Efficiency Calculator** | Evaluates fired heater thermal performance using 406 engineering formulas across 43 inputs. Produces KPIs like thermal efficiency, fuel efficiency, excess air %, and GHG emission rate. Includes a professional SVG process schematic with animated KPI annotations. | Express.js, ApexCharts |
 | **Pump Efficiency Calculator** | Analyzes centrifugal pump performance with 53 formulas covering curve fitting, system curves, NPSH, affinity laws, and BEP. Generates 5 interactive Plotly charts. | Python 3.11, FastAPI, SciPy |
 | **Mass Mole Converter** | Converts between mole% and mass% for 160 chemical compounds across 15 categories. Calculates stream properties (avg molecular weight, LHV). Includes 5 industry presets. | Express.js |
-| **Feature Optimizer** | ML-based feature importance analysis and parameter optimization. Upload CSV or paste from Excel → preprocess → analyze → optimize. Includes one-click analysis and feature response charts. | Express.js + PHP hybrid, Chart.js |
-| **Interactive Reports** | Library of 25 petroleum industry reports (370 MB of static HTML) served via Nginx. Searchable, filterable by 5 categories. | Static HTML, Nginx |
+| **Optimizer — General** | General-purpose ML feature importance and parameter optimization. Upload CSV or paste from Excel → preprocess → analyze → optimize. Two-flow UI, sample datasets, one-click analysis, 50K iterations. | Express.js + PHP hybrid, Chart.js |
+| **Optimizer — Energy** | Domain-specific ML optimizer for power plant thermal efficiency. Same ML engine as General but with energy-focused AI system prompt, welcome message, and quick chips. | Express.js + PHP hybrid, Chart.js |
+| **Optimizer — Distillation** | Domain-specific ML optimizer for distillation column purity. Tailored AI chatbot for distillation process optimization. | Express.js + PHP hybrid, Chart.js |
+| **Optimizer — Flare** | Domain-specific ML optimizer for flare gas recovery rate. Tailored AI chatbot for flare system optimization. | Express.js + PHP hybrid, Chart.js |
+| **Interactive Reports** | Library of 27 petroleum industry reports (370 MB of static HTML) served via Nginx. Searchable, filterable by 5 categories. | Static HTML, Nginx |
 
 ### Coming Soon (12 apps)
 
@@ -53,7 +56,7 @@ The dashboard shows 12 additional apps across 7 pillars, currently marked as "Co
 | **AI Equipment Performance** | Turbine Analyzer, Boiler Monitor, Cooling Tower, Distillation Tower, Air Cooler, Separators, Compressors, Heat Exchanger |
 | **Process Smart Tools** | Unit Converter, Fluid Properties, Pipe Sizer, Relief Valve Sizing |
 
-Every calculation app includes an **AI Chat Assistant** ("EPROM AI Companion") powered by Anthropic Claude. The AI can fill input forms, run calculations, load scenarios, and provide engineering analysis — all through natural language conversation with tool-use capabilities. A separate Dashboard AI Companion helps users navigate the portal and understand the available tools.
+Every calculation app includes an **AI Chat Assistant** ("EPROM AI Companion") powered by Anthropic Claude with the official EPROM tears PNG logo. The AI can fill input forms, run calculations, load scenarios, and provide engineering analysis — all through natural language conversation with tool-use capabilities. A metered **AI Credits System** controls usage (1 unit = 10K tokens). A separate Dashboard AI Companion helps users navigate the portal and understand the available tools.
 
 ---
 
@@ -66,7 +69,7 @@ The dashboard organizes all apps into 7 strategic pillars:
 | **AI Equipment Performance** | Heater (live), + 8 coming soon |
 | **Process Smart Tools** | Pump (live), MassMole (live), + 4 coming soon |
 | **Virtual Sensors** | Quality Analyzer (coming soon) |
-| **Optimization Engine** | Feature Optimizer (live) |
+| **Optimization Engine** | 4 Feature Optimizers (live): General, Energy, Distillation, Flare |
 | **Smart Sustainability** | Carbon Footprint (coming soon) |
 | **Safety Intelligence** | Leak Detection (coming soon) |
 | **Knowledge Hub** | Interactive Reports (live) |
@@ -101,24 +104,26 @@ A formal IT strategy meeting established the deployment framework:
 
 | Role | Who | Notes |
 |------|-----|-------|
-| Developer | Ahmed Mohamed Sabri | Solo developer, built entire platform over 53 sessions |
+| Developer | Ahmed Mohamed Sabri | Solo developer, built entire platform over 57 sessions |
 | IT Department | Company IT team | Manages infrastructure, SSH access, network security |
 | Chairman | Eng. Hossam Asaad | Key stakeholder, EGYPES demo audience |
 | Friend/Colleague | Amr Abu Mady | Contributed ML Feature Optimizer upstream repo |
 
 ---
 
-## Current State (as of Session 53)
+## Current State (as of Session 57)
 
-- **4 calculation apps** live and tested on staging and production (heater, pump, massmole, optimizer)
+- **7 calculation apps** live on both staging and production: heater, pump, massmole, + 4 optimizer variants (general, energy, distillation, flare)
 - **12 coming-soon apps** displayed on dashboard across 7 pillars
+- **9 Docker containers** running on production (db, portal, heater, pump, massmole, optimizer-general, optimizer-energy, optimizer-distillation, optimizer-flare)
+- **AI Credits System** — metered usage (1 unit = 10K tokens), 3 plan tiers (Basic: 10 trial, Professional: 50/month, Enterprise: 500/month), admin grant & transaction history
+- **EPROM Tears Logo** — official PNG logo (`eprom-tears.png`) on all 8 AI chatbot FABs, headers, and bot avatars
 - **Heater process schematic** — professional SVG with 8 animated KPI annotations
-- **Optimizer V2** — one-click analysis, paste from Excel, feature response charts
-- **5 unified AI chatbots** — consistent icons (two-drops SVG), white headers, mobile bottom sheets, onboarding tips
+- **8 unified AI chatbots** — consistent EPROM tears icons, white headers, mobile bottom sheets, onboarding tips
 - **7-pillar dashboard** with collapsible sections and universal sidebar
-- **Iframe app integration** — apps load inside portal with consistent navigation
+- **SMTP Email Relay** — HTTPS relay route for company VM (firewall blocks outbound SMTP)
 - **Admin dashboard overhaul** complete — global stats, session lifecycle tracking, user journey timeline
 - **AI token optimization** achieving 63–86% cost reduction across all apps
-- **Company VM migration** complete (192.168.50.202, 8 CPU / 24 GB RAM), 130/130 Playwright tests passed
-- **Pre-production security audit** pending before domain goes live
+- **Company VM** deployed at 192.168.240.3 (8 CPU / 24 GB RAM), 1,437 E2E tests passed (99.5%)
+- **Pre-production security audit** 13/14 checks pass (only Docker-runs-as-root remains)
 - **SSL and domain** active on staging (eprom-portal.xyz), pending on production (ese.eprom.com.eg)

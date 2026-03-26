@@ -1,12 +1,12 @@
 # AI Chat System
 
-**Last Generated:** 2026-03-17
+**Last Generated:** 2026-03-26
 
 ---
 
 ## Overview
 
-All 4 calculation apps (Heater, Pump, MassMole, Optimizer) plus the Dashboard share a common AI chatbot UX pattern. The AI assistant is called "EPROM AI Companion" and is powered by Anthropic Claude (Haiku by default, with secret access to Sonnet and Opus). All 5 chatbots were unified visually and behaviorally in Sessions 51-52.
+All 7 calculation apps (Heater, Pump, MassMole, and 4 Optimizer variants) plus the Dashboard share a common AI chatbot UX pattern. The AI assistant is called "EPROM AI Companion" and is powered by Anthropic Claude (Haiku by default). All 8 chatbots were unified visually in Sessions 51-52, then updated with the official EPROM tears PNG logo in Session 57. AI usage is gated by a **credits system** (1 unit = 10K tokens) added in Session 53.
 
 ---
 
@@ -60,10 +60,10 @@ const chat = new ChatBase({
 | **Auto-resize textarea** | Input grows with content |
 | **Session-based history** | Chat messages persist in localStorage but clear on new browser sessions (via sessionStorage flag) |
 | **Clear chat** | Trash icon button to clear history and reset conversation |
-| **Two-drops avatar** | Standardized SVG icon on AI messages (blue drop `#1565C0` + green drop `#4CAF50`) |
+| **EPROM tears avatar** | Official EPROM tears PNG logo (`eprom-tears.png`) on FAB, chat header, and AI messages (replaced two-drops SVG in Session 57) |
 | **Desktop side panel** | 400px fixed width, push-aside layout (>1200px) |
 | **Mobile bottom sheet** | 3-state: peek (~60px), half (50-55vh), full (~92-95vh) |
-| **Model selector** | Hidden Easter egg (10 clicks on logo) for Haiku/Sonnet/Opus |
+| **Credits badge** | Live-updating badge in chat header showing remaining AI credit units after each message |
 | **Onboarding tips** | Contextual guidance for first 4 visits (auto-dismiss after 8s) |
 | **FAB dismiss** | Chat FAB hides when panel is open (via `body.chat-open` class) |
 | **White header** | All chat panels use white background with dark text |
@@ -234,6 +234,26 @@ Chat conversations are stored in two places:
 
 ---
 
+## AI Credits System (Session 53)
+
+All AI chat is metered through a credits system:
+
+| Tier | Monthly Quota | Notes |
+|------|-------------|-------|
+| **Basic** | 10 units (trial, one-time) | Auto-assigned on signup |
+| **Professional** | 50 units/month | Auto-resets monthly |
+| **Enterprise** | 500 units/month | Full AI access |
+
+**1 AI Unit = 10,000 tokens** (input + output combined, ~$0.02 with Haiku).
+
+- **Pre-chat check:** `requireAIAccess()` middleware verifies credit balance before allowing chat
+- **Post-chat deduction:** All 8 bots deduct credits after each response, log transactions
+- **Dashboard gauge:** `AiCreditsGauge.js` — color-coded progress bar (green/yellow/red), shows remaining/quota, reset date
+- **Admin panel:** "AI Credits" tab — user credit table, "Grant Credits" modal, transaction history viewer
+- **Exhaustion handling:** "AI Credits Exhausted" message with dashboard link in all 8 bots
+
+---
+
 ## Per-App Chat Configuration
 
 | App | Tools | Visual Actions | Model Default |
@@ -242,4 +262,6 @@ Chat conversations are stored in two places:
 | Heater | 7 (fill_inputs, trigger_calculate, get_current_results, get_current_inputs, load_scenario, scroll_to_section, show_insight) | Yes (cursor fills form fields) | Haiku |
 | Pump | 6 (fill_inputs, trigger_calculate, get_current_results, get_current_inputs, show_insight, display_results) | Yes (with before/after hooks) | Haiku |
 | MassMole | 8 (search_compound, get_compound_details, fill_composition, trigger_calculate, load_preset, clear_composition, switch_basis, show_insight) | No (uses action callbacks) | Haiku |
-| Optimizer | 9 (upload_data, set_target_column, run_preprocessing, calculate_importance, run_optimization, one_click_analysis, get_results, get_data_summary, show_insight) | No (routes to PHP API) | Haiku |
+| Optimizer (×4) | 9 each (upload_data, set_target_column, run_preprocessing, calculate_importance, run_optimization, one_click_analysis, get_results, get_data_summary, show_insight) | No (routes to PHP API) | Haiku |
+
+Each of the 4 optimizer variants (General, Energy, Distillation, Flare) has the same 9 tools but a **unique domain-specific system prompt**, welcome message, and quick chips.

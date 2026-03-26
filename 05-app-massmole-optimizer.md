@@ -1,6 +1,6 @@
 # Apps: MassMole Converter & Feature Optimizer
 
-**Last Generated:** 2026-03-17
+**Last Generated:** 2026-03-26
 
 ---
 
@@ -78,87 +78,76 @@ When loaded inside the portal iframe (via `/_proxy/massmole/`):
 
 ---
 
-## Part 2: Feature Optimizer
+## Part 2: Feature Optimizer (4 Independent Apps)
 
 ### Overview
 
-The Feature Optimizer is an ML-based tool for feature importance analysis and parameter optimization. It uses a unique Express.js + PHP hybrid architecture — Node.js handles routing, auth, and AI chat (port 3007), while PHP/Apache handles the ML computation (port 8080, internal only). Uses Pearson correlation for importance ranking and random search (10,000 iterations) for optimization.
+As of Session 55, the single optimizer was split into **4 fully independent apps**, each with its own directory, Docker container, AI chatbot (with domain-specific system prompt), and database log tables. They share the same ML engine (Express.js + PHP hybrid) but are tailored to different engineering domains.
 
-**URL:** https://eprom-portal.xyz/apps/optimizer/
-**Container:** `eprom_optimizer`
-**Technology:** Express.js + PHP
-**Port:** 3007 (behind Nginx at `/apps/optimizer/` or `/_proxy/optimizer/`)
+| App | Container | Port | Domain Focus |
+|-----|-----------|------|-------------|
+| **Optimizer — General** | `eprom_optimizer_general` | 3007 | General-purpose ML optimization |
+| **Optimizer — Energy** | `eprom_optimizer_energy` | 3008 | Power plant thermal efficiency |
+| **Optimizer — Distillation** | `eprom_optimizer_distillation` | 3009 | Distillation column purity |
+| **Optimizer — Flare** | `eprom_optimizer_flare` | 3010 | Flare gas recovery rate |
 
-### Data Input Methods
+Each runs Express.js (Node.js) for auth and AI chat + PHP/Apache (port 8080, internal) for ML computation. Based on Amr Abu Mady's upstream repo (`github.com/amrabumady/ml-feature-optimizer`), with EPROM additions: auth, AI chat, theming, preprocessing upgrades, one-click analysis, paste from Excel, feature response charts, and domain-specific system prompts.
 
-Users can load data two ways (tab UI added in Session 50):
-1. **Upload File** — Upload a CSV dataset file
-2. **Paste from Excel** — Paste tab-separated data directly into a textarea with live preview table. Auto-delimiter detection (tab vs comma) and auto-transpose detection (if variables are rows instead of columns).
+### Two-Flow Data Input (Session 56)
+
+Users can load data two ways via a method selector UI:
+1. **Paste from Excel** — Paste tab-separated data with auto-delimiter and auto-transpose detection, live preview table
+2. **Upload Data File** — Upload a CSV dataset file
+
+A **welcome banner** with config-driven app name and description appears per variant. Sample datasets can be loaded to try the tool immediately.
 
 ### 5-Step Workflow
 
 | Step | What Happens |
 |------|-------------|
 | **1. Upload** | User uploads CSV or pastes from Excel |
-| **2. Data Quality & Preprocessing** | `DataPreprocessor` class scans for issues: missing values, text in numeric columns, outliers, duplicates, infinite values, constant columns. User can auto-fix or manually adjust. |
-| **3. Feature Importance** | Correlation analysis ranks features by importance relative to a target variable. Configurable threshold for filtering. |
-| **4. Optimization** | Random search (10,000 iterations) optimizes feature values to maximize/minimize the target variable. Uses linear or polynomial regression models. `CrossValidator` with 5-fold CV validates model quality (R², RMSE, MAE). |
-| **5. Results** | Optimized parameter values, predicted target value, improvement percentage, model metrics (R², RMSE, MAE), feature response charts. |
+| **2. Data Quality & Preprocessing** | `DataPreprocessor` class scans: missing values, text in numeric, outliers, duplicates, infinite values, constant columns |
+| **3. Feature Importance** | Correlation analysis ranks features. Configurable threshold + elbow method auto-cutoff |
+| **4. Optimization** | Random search (50,000 iterations) with feature normalization. Linear or polynomial regression. `CrossValidator` 5-fold CV (R², RMSE, MAE) |
+| **5. Results** | Optimized parameters, predicted target, improvement %, model metrics, feature response charts |
 
-### One-Click Analysis (Session 50)
+### One-Click Analysis
 
-A simplified workflow added in Session 50: select target column + goal (maximize/minimize) and click "One-Click Analysis". Runs preprocessing → importance → polynomial optimization in a single request. Dedicated endpoint: `php/api/one-click.php`.
+Select target column + goal (maximize/minimize) → "One-Click Analysis" runs preprocessing → importance → polynomial optimization in a single request. Endpoint: `php/api/one-click.php`.
 
-### Feature Response Charts (Session 50)
+### AI Chat — 9 Tools (per variant)
 
-After optimization, interactive charts (Chart.js) show how each feature affects the predicted target value. For each feature, sweeps min→max in 50 steps while holding other features at their mean. Each chart displays: feature name, correlation badge (r value), line chart, green star at optimal value. Responsive grid layout.
+| Tool | What It Does |
+|------|-------------|
+| `upload_data` | Upload CSV data as text |
+| `set_target_column` | Set the target (Y) variable |
+| `run_preprocessing` | Clean data (6 issue types) |
+| `calculate_importance` | Pearson correlation analysis |
+| `run_optimization` | Random search optimization (50K iterations) |
+| `one_click_analysis` | Full pipeline in one call |
+| `get_results` | Get session state by section |
+| `get_data_summary` | Dataset summary statistics |
+| `show_insight` | ML educational insight card |
+
+Each variant has a **unique AI system prompt** with domain-specific terminology, welcome message, and quick chips tailored to its engineering area.
 
 ### Key PHP Classes
 
 | Class | File | Purpose |
 |-------|------|---------|
-| `DataPreprocessor` | `php/preprocessing.php` | Scans and preprocesses uploaded data (6 issue types) |
-| `CrossValidator` | `php/validation.php` | 5-fold cross-validation with R², RMSE, MAE metrics |
-
-### AI Chat — 9 Tools
-
-| Tool | What It Does |
-|------|-------------|
-| `upload_data` | Upload CSV data as text (headers + data rows) |
-| `set_target_column` | Set the target (Y) variable column name |
-| `run_preprocessing` | Clean data: handle missing values, text in numeric columns, outliers, duplicates |
-| `calculate_importance` | Pearson correlation analysis to rank features; auto-detects cutoff via elbow method |
-| `run_optimization` | Random search (10,000 iterations) to find optimal X values; linear or polynomial model |
-| `one_click_analysis` | Full pipeline in one call: preprocessing → importance → optimization (added Session 50) |
-| `get_results` | Get session state by section (data, importance, optimization, all) |
-| `get_data_summary` | Get loaded dataset summary: columns, row count, basic statistics |
-| `show_insight` | Display ML educational insight card (tip, warning, info, benchmark) |
-
-The AI tool executor routes tool calls to PHP API endpoints on port 8080:
-- `php/api/run-importance.php`
-- `php/api/run-optimization.php`
-- `php/api/run-preprocessing.php`
-- `php/api/get-session-state.php`
-- `php/api/one-click.php`
-
-### Iframe Mode
-
-When loaded inside the portal iframe (via `/_proxy/optimizer/`):
-- **Hides:** `.header`
-- **Preserves:** Existing `#chat-toggle` button
-- FAB uses standardized two-drops SVG icon
-
-### Upstream Repository
-
-The optimizer is based on a friend's (Amr Abu Mady) open-source repo: `github.com/amrabumady/ml-feature-optimizer`. The EPROM version adds auth integration, AI chat, EPROM theming, preprocessing upgrades, one-click analysis, paste from Excel, and feature response charts.
+| `DataPreprocessor` | `php/preprocessing.php` | Scans and preprocesses data (6 issue types) |
+| `CrossValidator` | `php/validation.php` | 5-fold cross-validation with R², RMSE, MAE |
 
 ### Frontend
 
-Unlike other apps that use vanilla HTML, the optimizer's frontend is a PHP-rendered page (`php/index.php`) with the 5-step workflow UI. It uses its own `eprom-theme.css` for styling and loads `chat-base.js` from the shared library. Chart.js is used for feature response charts.
-
-The optimizer originally had a dark theme and was the last app migrated to the EPROM light theme (Session 40). Its mobile CSS is considered the most complete — it has zero framework conflicts and exhaustive responsive coverage, making it the reference for mobile improvements to other apps.
+Each optimizer is a PHP-rendered page (`php/index.php`) with the 5-step workflow UI, `eprom-theme.css` for EPROM light theme styling, `chat-base.js` from the shared library, and Chart.js for feature response charts. The EPROM tears PNG logo (`eprom-tears.png`) is used for all chatbot icons.
 
 ### Database Logging
 
-- **`optimizer_calculation_logs`**: Dual-purpose table with `calc_type` column (importance or optimization). Importance rows store: feature_count, total_features, threshold, data_rows, target_column. Optimization rows store: predicted_y, objective, model_type, features_optimized, improvement_pct, iterations.
+Each optimizer variant shares the same table structure:
+- **`optimizer_calculation_logs`**: Dual-purpose with `calc_type` column (importance or optimization). Importance rows: feature_count, total_features, threshold, data_rows, target_column. Optimization rows: predicted_y, objective, model_type, features_optimized, improvement_pct, iterations.
 - **`optimizer_chat_logs`**: Standard chat log schema (conversation_id, role, content, tool_calls, model, tokens).
+
+### E2E Testing
+
+200 E2E tests across all 4 optimizer variants on production — 199 pass, 1 fail (99.5% pass rate).

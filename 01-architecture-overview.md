@@ -1,6 +1,6 @@
 # Architecture Overview
 
-**Last Generated:** 2026-03-17
+**Last Generated:** 2026-03-26
 
 ---
 
@@ -24,7 +24,7 @@
                │ HTTP (internal, 127.0.0.1 only)
                ▼
 ┌──────────────────────────────────────────────────────────┐
-│  Docker Compose v2 (6 containers on eprom_net bridge)    │
+│  Docker Compose v2 (10 containers on eprom_net bridge)   │
 │                                                          │
 │  ┌────────────┐  ┌────────────┐  ┌────────────┐         │
 │  │ portal     │  │ heater     │  │ pump       │         │
@@ -32,13 +32,15 @@
 │  │ Next.js    │  │ Express.js │  │ FastAPI    │         │
 │  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘         │
 │        │               │               │                │
-│  ┌────────────┐  ┌────────────┐                         │
-│  │ massmole   │  │ optimizer  │                         │
-│  │ :3006      │  │ :3007      │                         │
-│  │ Express.js │  │ Express+PHP│                         │
-│  └─────┬──────┘  └─────┬──────┘                         │
-│        │               │                                │
-│        └───────┬───────┘                                │
+│  ┌────────────┐  ┌──────────────────┐                   │
+│  │ massmole   │  │ 4 × optimizer    │                   │
+│  │ :3006      │  │ general  :3007   │                   │
+│  │ Express.js │  │ energy   :3008   │                   │
+│  └─────┬──────┘  │ distill. :3009   │                   │
+│        │         │ flare    :3010   │                   │
+│        │         │ Express+PHP each │                   │
+│        │         └────────┬─────────┘                   │
+│        └───────┬──────────┘                             │
 │                ▼                                        │
 │  ┌──────────────────────┐                               │
 │  │ db (PostgreSQL 16)   │                               │
@@ -59,9 +61,12 @@
 | `eprom_heater` | 3001 | Express.js (Node 20) | Fired heater calculations (406 formulas) |
 | `eprom_pump` | 3005 | FastAPI (Python 3.11) | Pump efficiency calculations (53 formulas) |
 | `eprom_massmole` | 3006 | Express.js (Node 20) | Mass/mole conversion (160 compounds) |
-| `eprom_optimizer` | 3007 | Express.js + PHP | ML feature importance & optimization |
+| `eprom_optimizer_general` | 3007 | Express.js + PHP | General-purpose ML feature importance & optimization |
+| `eprom_optimizer_energy` | 3008 | Express.js + PHP | Energy/power plant domain optimizer |
+| `eprom_optimizer_distillation` | 3009 | Express.js + PHP | Distillation column domain optimizer |
+| `eprom_optimizer_flare` | 3010 | Express.js + PHP | Flare gas recovery domain optimizer |
 
-All application containers bind to `127.0.0.1` only — they are not directly accessible from the internet. Only Nginx exposes ports 80/443.
+All application containers bind to `127.0.0.1` only — they are not directly accessible from the internet. Only Nginx exposes ports 80/443. The old single `optimizer/` directory is deprecated — the 4 domain-specific optimizer apps replaced it in Session 55.
 
 ---
 
@@ -94,7 +99,7 @@ Apps can be accessed two ways:
 
 | Property | EC2 (Staging) | Company KVM (Production) |
 |----------|--------------|-------------------------|
-| **IP** | 18.198.1.231 | 192.168.50.202 |
+| **IP** | 18.198.1.231 | 192.168.240.3 |
 | **URL** | https://eprom-portal.xyz | https://ese.eprom.com.eg (pending) |
 | **OS** | Ubuntu 24.04 LTS | Ubuntu 24.04.4 LTS |
 | **CPU** | 2 vCPU (t3.micro) | 8 cores (KVM) |
@@ -105,7 +110,7 @@ Apps can be accessed two ways:
 | **SSL** | Let's Encrypt (auto-renew) | Pending |
 | **Resource limits** | None (small VM) | docker-compose.override.yml (19 GB / 8 CPU) |
 | **Backups** | Manual | Daily cron at 2 AM, 7-day retention |
-| **Playwright tests** | Ongoing | 130/130 passed (Session 46) |
+| **Playwright tests** | Ongoing | 1,437/1,437 passed (Session 55) — 99.5% pass rate |
 
 ---
 
@@ -124,7 +129,7 @@ Apps can be accessed two ways:
 | Database | PostgreSQL 16 | Alpine image, Docker volume persistence |
 | Pump Backend | Python 3.11 + FastAPI + uvicorn | numpy, scipy, plotly, asyncpg |
 | Optimizer Backend | PHP | DataPreprocessor, CrossValidator, genetic algorithm, Chart.js |
-| Containers | Docker Compose v2 | 6 services on bridge network |
+| Containers | Docker Compose v2 | 10 services on bridge network (db + portal + heater + pump + massmole + 4 optimizers) |
 | Web Server | Nginx | System service, reverse proxy + static files |
 | SSL | Let's Encrypt (Certbot) | Auto-renewal on staging |
 
@@ -145,3 +150,7 @@ Apps can be accessed two ways:
 6. **Iframe integration:** Apps are embedded within the portal via iframes using `/_proxy/` Nginx paths. The portal's sidebar and navigation remain visible while the app runs in an iframe. Apps detect embedding via `window.parent !== window` and hide their own navigation to avoid duplication.
 
 7. **7-pillar dashboard:** The dashboard organizes all apps (live and coming-soon) into 7 strategic pillars, each with collapsible sections. A centralized `pillars-config.js` defines all app metadata, pillars, and coming-soon status.
+
+8. **AI Credits metering:** A credit system (1 unit = 10K tokens) gates AI chat access across all apps. Credits are checked pre-chat via `requireAIAccess()` middleware and deducted post-chat. Three tiers: Basic (10 trial), Professional (50/month), Enterprise (500/month).
+
+9. **SMTP Email Relay:** The company VM firewall blocks outbound SMTP. A relay route (`/api/internal/relay-email`) on the portal accepts email data over HTTPS and sends via Gmail SMTP on EC2, secured with an API key and rate limiting.

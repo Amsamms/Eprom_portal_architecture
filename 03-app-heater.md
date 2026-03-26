@@ -1,6 +1,6 @@
 # App: Heater Efficiency Calculator
 
-**Last Generated:** 2026-03-17
+**Last Generated:** 2026-03-26
 
 ---
 
@@ -115,9 +115,9 @@ When the AI calls `fill_inputs`, the frontend plays an animated cursor that:
 
 This is powered by `visual-actions-base.js` (shared library) + `visual-actions-config.js` (heater-specific field mapping).
 
-### Model Selector (Easter Egg)
+### AI Chat Icon
 
-Clicking the EPROM logo 10 times reveals a dropdown to switch between Claude Haiku (default), Sonnet, and Opus. The selection is saved to localStorage. This is a hidden feature for internal testing.
+The heater chatbot uses the official EPROM tears PNG logo (`eprom-tears.png`) in 3 locations: FAB button, chat panel header, and bot message avatar. Replaced the inline two-drops SVG in Session 57.
 
 ---
 

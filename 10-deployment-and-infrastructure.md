@@ -1,6 +1,6 @@
 # Deployment & Infrastructure
 
-**Last Generated:** 2026-03-17
+**Last Generated:** 2026-03-26
 
 ---
 
@@ -19,26 +19,26 @@
 | **Docker** | 28.2.2 |
 | **SSL** | Let's Encrypt (auto-renew via Certbot), valid until May 2026 |
 | **Firewall** | UFW: ports 22, 80, 443 |
-| **Services** | Docker Compose v2: 6 containers (db, portal, heater, pump, massmole, optimizer) |
+| **Services** | Docker Compose v2: 10 containers (db, portal, heater, pump, massmole, optimizer-general, optimizer-energy, optimizer-distillation, optimizer-flare) |
 
 ### Company KVM — Production
 
 | Property | Value |
 |----------|-------|
-| **IP** | 192.168.50.202 (private network) |
+| **IP** | 192.168.240.3 (private network) |
 | **URL** | https://ese.eprom.com.eg (pending DNS + SSL) |
 | **OS** | Ubuntu 24.04.4 LTS |
 | **Virtualization** | KVM (QEMU i440FX) |
 | **Specs** | 8 CPU, 24 GB RAM + 4 GB swap, 80 GB disk |
-| **SSH** | `sshpass -p '123456' ssh ai@192.168.50.202` |
+| **SSH** | `sshpass -p 'Epr0m@KVM2026s' ssh ai@192.168.240.3` |
 | **Docker** | 29.3.0, Compose v5.1.0 |
 | **SSL** | Pending (company cert or Let's Encrypt) |
-| **Firewall** | UFW: ports 22, 80, 443 |
+| **Firewall** | UFW: ports 22, 80, 443. Outbound SMTP (587/465) blocked — uses HTTPS relay via EC2 |
 | **Resource limits** | docker-compose.override.yml: 19 GB RAM / 8 CPU allocated to containers |
 | **Backups** | Daily cron at 2 AM, 7-day retention (~20 MB each) |
-| **Reports** | 370 MB static HTML in /opt/eprom/reports/ (25 reports) |
-| **Nginx** | 1.24.0, proxying all 5 apps + iframe proxies + serving static reports |
-| **Testing** | 130/130 Playwright tests passed (Session 46) |
+| **Reports** | 370 MB static HTML in /opt/eprom/reports/ (27 reports) |
+| **Nginx** | 1.24.0, proxying all 8 apps + iframe proxies + serving static reports. HTTP→HTTPS redirect + HSTS |
+| **Testing** | 1,437 E2E tests passed (Session 55) — 99.5% pass rate |
 
 ---
 
@@ -55,7 +55,10 @@
 | `heater` | Built from `./heater` | 127.0.0.1:3001:3001 | db (healthy) |
 | `pump` | Built from `./pump` | 127.0.0.1:3005:3005 | db (healthy) |
 | `massmole` | Built from `./massmole` | 127.0.0.1:3006:3006 | db (healthy) |
-| `optimizer` | Built from `./optimizer` | 127.0.0.1:3007:3007 | db (healthy) |
+| `optimizer-general` | Built from `./optimizer-general` | 127.0.0.1:3007:3007 | db (healthy) |
+| `optimizer-energy` | Built from `./optimizer-energy` | 127.0.0.1:3008:3008 | db (healthy) |
+| `optimizer-distillation` | Built from `./optimizer-distillation` | 127.0.0.1:3009:3009 | db (healthy) |
+| `optimizer-flare` | Built from `./optimizer-flare` | 127.0.0.1:3010:3010 | db (healthy) |
 
 All services use `restart: unless-stopped`. The database has a health check (`pg_isready`); application containers do not (known gap).
 
@@ -77,8 +80,8 @@ rsync -avz -e "ssh -i ~/eprom-aws-key.pem" \
   portal/src/ ubuntu@18.198.1.231:/opt/eprom/portal/src/
 
 # To Company VM (production):
-rsync -avz -e "sshpass -p '123456' ssh -o StrictHostKeyChecking=no" \
-  portal/src/ ai@192.168.50.202:/opt/eprom/portal/src/
+rsync -avz -e "sshpass -p 'Epr0m@KVM2026s' ssh -o StrictHostKeyChecking=no" \
+  portal/src/ ai@192.168.240.3:/opt/eprom/portal/src/
 ```
 
 Replace `portal/src/` with the appropriate app directory:
@@ -97,7 +100,7 @@ ssh -i ~/eprom-aws-key.pem ubuntu@18.198.1.231 \
   "cd /opt/eprom && docker compose up -d --build portal"
 
 # On Company VM:
-sshpass -p '123456' ssh -o StrictHostKeyChecking=no ai@192.168.50.202 \
+sshpass -p 'Epr0m@KVM2026s' ssh -o StrictHostKeyChecking=no ai@192.168.240.3 \
   "cd /opt/eprom && docker compose up -d --build portal"
 ```
 
